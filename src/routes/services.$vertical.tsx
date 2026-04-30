@@ -64,7 +64,7 @@ function VerticalPage() {
           <Reveal delay={0.1} className="lg:col-span-5">
             <div className="text-xs uppercase tracking-[0.25em] text-primary mb-4">Capabilities</div>
             <ul className="space-y-3">
-              {vertical.highlights.map((h) => (
+              {vertical.highlights.map((h: string) => (
                 <li key={h} className="flex items-center gap-3 text-sm">
                   <Check className="w-4 h-4 text-primary" /> {h}
                 </li>
