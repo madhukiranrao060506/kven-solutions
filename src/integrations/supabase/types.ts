@@ -14,16 +14,242 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          company: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          company?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          company?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_documents: {
+        Row: {
+          id: string
+          mime_type: string | null
+          name: string
+          project_id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_at: string
+        }
+        Insert: {
+          id?: string
+          mime_type?: string | null
+          name: string
+          project_id: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_at?: string
+        }
+        Update: {
+          id?: string
+          mime_type?: string | null
+          name?: string
+          project_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          eta: string | null
+          id: string
+          progress_pct: number
+          started_at: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          title: string
+          updated_at: string
+          vertical: Database["public"]["Enums"]["service_vertical"]
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          eta?: string | null
+          id?: string
+          progress_pct?: number
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          title: string
+          updated_at?: string
+          vertical: Database["public"]["Enums"]["service_vertical"]
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          eta?: string | null
+          id?: string
+          progress_pct?: number
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          title?: string
+          updated_at?: string
+          vertical?: Database["public"]["Enums"]["service_vertical"]
+        }
+        Relationships: []
+      }
+      rfq_submissions: {
+        Row: {
+          company: string | null
+          contact_email: string
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          id: string
+          payload: Json
+          reference_code: string
+          status: Database["public"]["Enums"]["rfq_status"]
+          user_id: string | null
+          vertical: Database["public"]["Enums"]["service_vertical"]
+        }
+        Insert: {
+          company?: string | null
+          contact_email: string
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          reference_code?: string
+          status?: Database["public"]["Enums"]["rfq_status"]
+          user_id?: string | null
+          vertical: Database["public"]["Enums"]["service_vertical"]
+        }
+        Update: {
+          company?: string | null
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          payload?: Json
+          reference_code?: string
+          status?: Database["public"]["Enums"]["rfq_status"]
+          user_id?: string | null
+          vertical?: Database["public"]["Enums"]["service_vertical"]
+        }
+        Relationships: []
+      }
+      supply_inquiries: {
+        Row: {
+          company: string | null
+          contact_email: string
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          delivery_location: string | null
+          id: string
+          items: Json
+          notes: string | null
+          reference_code: string
+          status: Database["public"]["Enums"]["rfq_status"]
+          user_id: string | null
+        }
+        Insert: {
+          company?: string | null
+          contact_email: string
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          delivery_location?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          reference_code?: string
+          status?: Database["public"]["Enums"]["rfq_status"]
+          user_id?: string | null
+        }
+        Update: {
+          company?: string | null
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          delivery_location?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          reference_code?: string
+          status?: Database["public"]["Enums"]["rfq_status"]
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "client"
+      project_status: "planning" | "in_progress" | "on_hold" | "completed"
+      rfq_status: "new" | "reviewing" | "quoted" | "won" | "lost" | "archived"
+      service_vertical: "civil" | "interior" | "events" | "supplies"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +376,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "client"],
+      project_status: ["planning", "in_progress", "on_hold", "completed"],
+      rfq_status: ["new", "reviewing", "quoted", "won", "lost", "archived"],
+      service_vertical: ["civil", "interior", "events", "supplies"],
+    },
   },
 } as const
