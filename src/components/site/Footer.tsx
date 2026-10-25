@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Linkedin, Instagram, Mail, MapPin } from "lucide-react";
+import { Linkedin, Instagram, Mail, MapPin, Phone } from "lucide-react";
 import { VERTICALS } from "@/data/site";
 
 export function Footer() {
@@ -39,7 +39,6 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
               <li><Link to="/portfolio" className="hover:text-primary transition-colors">Portfolio</Link></li>
-              <li><Link to="/sustainability" className="hover:text-primary transition-colors">Sustainability</Link></li>
               <li><Link to="/rfq" className="hover:text-primary transition-colors">Request a quote</Link></li>
               <li><Link to="/login" className="hover:text-primary transition-colors">Client portal</Link></li>
             </ul>
@@ -48,8 +47,16 @@ export function Footer() {
           <div>
             <div className="text-xs uppercase tracking-[0.25em] text-primary mb-4">Contact</div>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2"><MapPin className="w-4 h-4 mt-0.5 text-primary" /> Tower 12, Olaya District<br />Riyadh, KSA</li>
-              <li className="flex items-center gap-2"><Mail className="w-4 h-4 text-primary" /> hello@kvensolutions.com</li>
+              <li className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5 text-primary" />
+                1-39, J V Agraharam,<br />Bheemunipatnam, Visakhapatnam,<br />Andhra Pradesh-531163
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" /> kven.solutions@gmail.com
+              </li>
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-primary" /> 9515538283 / 8125275920
+              </li>
             </ul>
           </div>
         </div>

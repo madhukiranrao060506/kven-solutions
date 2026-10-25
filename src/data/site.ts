@@ -23,7 +23,7 @@ export const VERTICALS: VerticalInfo[] = [
       "Bridges, commercial structures, and infrastructure delivered with precision engineering and uncompromising quality control.",
     icon: Building2,
     image:
-      "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1600&q=80",
+      "",
     highlights: ["Structural engineering", "Project management", "Safety-first execution", "BIM modelling"],
   },
   {
@@ -212,22 +212,25 @@ export const PROJECTS: Project[] = [
 ];
 
 export const HERO_FRAMES = [
-  {
-    src: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=85",
-    label: "Civil",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1616137466211-f939a420be84?auto=format&fit=crop&w=2000&q=85",
-    label: "Interior",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=2000&q=85",
-    label: "Events",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=2000&q=85",
-    label: "Supplies",
-  },
+  { src: "/images/hero1.jpeg", label: "Civil" },
+  { src: "/images/hero2.jpeg", label: "Interior" },
+  { src: "/images/hero3.jpeg", label: "Events" },
+  { src: "/images/hero4.jpeg", label: "Supplies" },
+  { src: "/images/hero5.jpeg", label: "Civil" },
+  { src: "/images/hero6.jpeg", label: "Interior" },
+  { src: "/images/hero7.jpeg", label: "Events" },
+  { src: "/images/hero8.jpeg", label: "Supplies" },
+  { src: "/images/hero9.jpeg", label: "Civil" },
+  { src: "/images/hero10.jpeg", label: "Interior" },
+  { src: "/images/hero11.jpeg", label: "Events" },
+  { src: "/images/hero12.jpeg", label: "Supplies" },
+  { src: "/images/hero13.jpeg", label: "Civil" },
+  { src: "/images/hero14.jpeg", label: "Interior" },
+  { src: "/images/hero15.jpeg", label: "Events" },
+  { src: "/images/hero16.jpeg", label: "Supplies" },
+  { src: "/images/hero17.jpeg", label: "Civil" },
+  { src: "/images/hero18.jpeg", label: "Interior" },
+  { src: "/images/hero19.jpeg", label: "Events" },
 ];
 
 export const PARTNERS = [

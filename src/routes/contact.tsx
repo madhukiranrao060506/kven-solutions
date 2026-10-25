@@ -36,9 +36,9 @@ function ContactPage() {
             <div className="glass-strong rounded-sm p-10 lg:p-14">
               <h2 className="font-display text-3xl">Reach a partner directly.</h2>
               <div className="mt-10 space-y-6">
-                <Item icon={Mail} label="Email" value="hello@kvensolutions.com" />
-                <Item icon={Phone} label="Phone" value="+966 11 000 0000" />
-                <Item icon={MapPin} label="Office" value={<>Tower 12, Olaya District<br />Riyadh, KSA</>} />
+                <Item icon={Mail} label="Email" value="kven.solutions@gmail.com" />
+                <Item icon={Phone} label="Phone" value="9515538283 / 8125275920" />
+                <Item icon={MapPin} label="Office" value={<>1-39, J V Agraharam,<br />Bheemunipatnam, Visakhapatnam,<br />Andhra Pradesh-531163</>} />
               </div>
 
               <div className="mt-10 pt-8 border-t border-border">

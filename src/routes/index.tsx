@@ -2,13 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import {
-  ArrowRight, ArrowDown, Quote, Leaf, Compass, Hammer, HandshakeIcon,
+  ArrowRight, ArrowDown, Quote, Compass, Hammer, HandshakeIcon,
   Building2, Sparkles,
 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 import { SiteShell } from "@/components/site/SiteShell";
 import { Reveal, Eyebrow } from "@/components/site/Reveal";
 import { VERTICALS, PROJECTS, HERO_FRAMES, PARTNERS, TESTIMONIALS } from "@/data/site";
 import { cn } from "@/lib/utils";
+
+const supabase = createClient(
+  "https://alxvakgaosrpnudmxerw.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFseHZha2dhb3NycG51ZG14ZXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NjIxNDUsImV4cCI6MjEwODMzODE0NX0.y4wMaVGjL9iaH_llYGE0Q4pcutpFM7AYaTFWWecgc18"
+);
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -23,7 +29,6 @@ function HomePage() {
       <FeaturedPortfolio />
       <DigitalTwin />
       <ImpactCounters />
-      <SustainabilityPreview />
       <ProcessTimeline />
       <PartnersMarquee />
       <Testimonials />
@@ -35,14 +40,36 @@ function HomePage() {
 /* ---------------- HERO ---------------- */
 function Hero() {
   const [active, setActive] = useState(0);
+  const [frames, setFrames] = useState<{ src: string; label: string }[]>(HERO_FRAMES);
+
   useEffect(() => {
-    const t = setInterval(() => setActive((i) => (i + 1) % HERO_FRAMES.length), 5500);
-    return () => clearInterval(t);
+    // Fetch hero images from Supabase
+    const fetchHeroImages = async () => {
+      const { data, error } = await supabase.storage
+        .from("works-images")
+        .list("hero", { sortBy: { column: "created_at", order: "asc" } });
+
+      if (!error && data && data.length > 0) {
+        const supabaseFrames = data.map((file) => {
+          const { data: urlData } = supabase.storage
+            .from("works-images")
+            .getPublicUrl(`hero/${file.name}`);
+          return { src: urlData.publicUrl, label: "Works" };
+        });
+        setFrames(supabaseFrames);
+      }
+    };
+    fetchHeroImages();
   }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setActive((i) => (i + 1) % frames.length), 5500);
+    return () => clearInterval(t);
+  }, [frames]);
 
   return (
     <section className="relative h-[100svh] min-h-[680px] w-full overflow-hidden">
-      {HERO_FRAMES.map((f, i) => (
+      {frames.map((f, i) => (
         <AnimatePresence key={f.src} mode="sync">
           {active === i && (
             <motion.div
@@ -63,7 +90,6 @@ function Hero() {
         </AnimatePresence>
       ))}
 
-      {/* gradients */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/30 to-background" />
       <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/20 to-transparent" />
 
@@ -104,25 +130,19 @@ function Hero() {
           Scroll to explore
         </div>
 
-        {/* slide indicators */}
-        <div className="absolute bottom-10 right-6 lg:right-10 flex gap-3">
-          {HERO_FRAMES.map((f, i) => (
+        <div className="absolute bottom-10 right-6 lg:right-10 flex gap-2">
+          {frames.map((_, i) => (
             <button
-              key={f.label}
+              key={i}
               onClick={() => setActive(i)}
-              className="group flex items-center gap-2"
-              aria-label={`Show ${f.label}`}
-            >
-              <span
-                className={cn(
-                  "h-px transition-all",
-                  active === i ? "w-12 bg-primary" : "w-6 bg-muted-foreground/40 group-hover:bg-muted-foreground"
-                )}
-              />
-              <span className={cn("text-[10px] uppercase tracking-[0.25em] transition-colors", active === i ? "text-primary" : "text-muted-foreground/60")}>
-                {f.label}
-              </span>
-            </button>
+              aria-label={`Slide ${i + 1}`}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                active === i
+                  ? "w-6 bg-primary"
+                  : "w-1.5 bg-muted-foreground/40 hover:bg-muted-foreground"
+              )}
+            />
           ))}
         </div>
       </div>
@@ -176,6 +196,31 @@ function CivilToInterior() {
 /* ---------------- BENTO GRID ---------------- */
 function BentoGrid() {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [verticalImages, setVerticalImages] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchVerticalImages = async () => {
+      const categories = ["civil", "interior", "events", "supplies"];
+      const images: Record<string, string> = {};
+
+      for (const cat of categories) {
+        const { data } = await supabase.storage
+          .from("works-images")
+          .list(cat, { limit: 1, sortBy: { column: "created_at", order: "desc" } });
+
+        if (data && data.length > 0) {
+          const { data: urlData } = supabase.storage
+            .from("works-images")
+            .getPublicUrl(`${cat}/${data[0].name}`);
+          images[cat] = urlData.publicUrl;
+        }
+      }
+      setVerticalImages(images);
+    };
+
+    fetchVerticalImages();
+  }, []);
+
   return (
     <section className="relative py-32 px-6 lg:px-10">
       <div className="mx-auto max-w-[1440px]">
@@ -194,51 +239,108 @@ function BentoGrid() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {VERTICALS.map((v, i) => (
-            <Reveal key={v.id} delay={i * 0.06}>
-              <Link
-                to="/services/$vertical"
-                params={{ vertical: v.slug }}
-                onMouseEnter={() => setHovered(v.id)}
-                onMouseLeave={() => setHovered(null)}
-                className="group block relative overflow-hidden rounded-sm aspect-[3/4] border-gold-hairline"
-              >
-                <img src={v.image} alt={v.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-transparent" />
-                <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                  <v.icon className="w-6 h-6 text-primary mb-3" />
-                  <h3 className="font-display text-2xl">{v.title}</h3>
-                  <AnimatePresence>
-                    {hovered === v.id && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{v.description}</p>
-                        <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-primary mt-4">
-                          View projects <ArrowRight className="w-3.5 h-3.5" />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  {hovered !== v.id && (
-                    <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">{v.tagline}</div>
+          {VERTICALS.map((v, i) => {
+            const imgSrc = verticalImages[v.id];
+            return (
+              <Reveal key={v.id} delay={i * 0.06}>
+                <Link
+                  to="/services/$vertical"
+                  params={{ vertical: v.slug }}
+                  onMouseEnter={() => setHovered(v.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  className="group block relative overflow-hidden rounded-sm aspect-[3/4] border-gold-hairline"
+                >
+                  {imgSrc ? (
+                    <img
+                      src={imgSrc}
+                      alt={v.title}
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-charcoal/80 flex items-center justify-center">
+                      <div className="text-center">
+                        <v.icon className="w-10 h-10 text-primary mx-auto mb-3" />
+                        <p className="text-xs text-muted-foreground">No image uploaded yet</p>
+                      </div>
+                    </div>
                   )}
-                </div>
-              </Link>
-            </Reveal>
-          ))}
+                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-transparent" />
+                  <div className="absolute inset-0 p-6 flex flex-col justify-end">
+                    <v.icon className="w-6 h-6 text-primary mb-3" />
+                    <h3 className="font-display text-2xl">{v.title}</h3>
+                    <AnimatePresence>
+                      {hovered === v.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{v.description}</p>
+                          <div className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-primary mt-4">
+                            View projects <ArrowRight className="w-3.5 h-3.5" />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    {hovered !== v.id && (
+                      <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">{v.tagline}</div>
+                    )}
+                  </div>
+                </Link>
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
-
 /* ---------------- FEATURED PORTFOLIO ---------------- */
 function FeaturedPortfolio() {
+  const [portfolioImages, setPortfolioImages] = useState<{ src: string; category: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPortfolioImages = async () => {
+      const categories = ["civil", "interior", "events", "supplies"];
+      const allImages: { src: string; category: string; name: string }[] = [];
+
+      for (const cat of categories) {
+        const { data, error } = await supabase.storage
+          .from("works-images")
+          .list(cat, { sortBy: { column: "created_at", order: "desc" } });
+
+        if (!error && data) {
+          data.slice(0, 2).forEach((file) => {
+            const { data: urlData } = supabase.storage
+              .from("works-images")
+              .getPublicUrl(`${cat}/${file.name}`);
+            allImages.push({
+              src: urlData.publicUrl,
+              category: cat,
+              name: file.name,
+            });
+          });
+        }
+      }
+
+      setPortfolioImages(allImages);
+      setLoading(false);
+    };
+
+    fetchPortfolioImages();
+  }, []);
+
+  const categoryLabel: Record<string, string> = {
+    civil: "Civil Works",
+    interior: "Interior Design",
+    events: "Event Management",
+    supplies: "Contracts & Supplies",
+  };
+
   return (
     <section className="relative py-32 px-6 lg:px-10 bg-charcoal/30">
       <div className="mx-auto max-w-[1440px]">
@@ -254,24 +356,50 @@ function FeaturedPortfolio() {
           </Reveal>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PROJECTS.slice(0, 6).map((p, i) => (
-            <Reveal key={p.id} delay={i * 0.05}>
-              <Link
-                to="/portfolio"
-                className="group block relative overflow-hidden rounded-sm aspect-[4/5]"
-              >
-                <img src={p.cover} alt={p.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/30 to-transparent" />
-                <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                  <div className="text-[10px] uppercase tracking-[0.3em] text-primary">{p.category}</div>
-                  <h3 className="font-display text-2xl mt-2">{p.title}</h3>
-                  <div className="text-xs text-muted-foreground mt-1">{p.location} · {p.year}</div>
-                </div>
-              </Link>
-            </Reveal>
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-muted-foreground text-sm">Loading portfolio...</div>
+        ) : portfolioImages.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {portfolioImages.slice(0, 6).map((img, i) => (
+              <Reveal key={img.src} delay={i * 0.05}>
+                <Link
+                  to="/portfolio"
+                  className="group block relative overflow-hidden rounded-sm aspect-[4/5]"
+                >
+                  <img
+                    src={img.src}
+                    alt={img.category}
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/30 to-transparent" />
+                  <div className="absolute inset-0 p-6 flex flex-col justify-end">
+                    <div className="text-[10px] uppercase tracking-[0.3em] text-primary">{categoryLabel[img.category]}</div>
+                    <h3 className="font-display text-2xl mt-2">Kven Solutions</h3>
+                    <div className="text-xs text-muted-foreground mt-1">Visakhapatnam · 2024</div>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        ) : (
+          // Fallback to PROJECTS if no images uploaded yet
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {PROJECTS.slice(0, 6).map((p, i) => (
+              <Reveal key={p.id} delay={i * 0.05}>
+                <Link to="/portfolio" className="group block relative overflow-hidden rounded-sm aspect-[4/5]">
+                  <img src={p.cover} alt={p.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/30 to-transparent" />
+                  <div className="absolute inset-0 p-6 flex flex-col justify-end">
+                    <div className="text-[10px] uppercase tracking-[0.3em] text-primary">{p.category}</div>
+                    <h3 className="font-display text-2xl mt-2">{p.title}</h3>
+                    <div className="text-xs text-muted-foreground mt-1">{p.location} · {p.year}</div>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -329,16 +457,8 @@ function DigitalTwin() {
               className="relative w-full h-full"
               style={{ transformStyle: "preserve-3d" }}
             >
-              {/* Layer 1 — base plate */}
-              <div
-                className="absolute inset-8 rounded-sm border-gold-hairline glass-strong shadow-luxury"
-                style={{ transform: "translateZ(0px)" }}
-              />
-              {/* Layer 2 — floor plan */}
-              <div
-                className="absolute inset-12 rounded-sm border border-primary/20 bg-charcoal/70 overflow-hidden"
-                style={{ transform: "translateZ(40px)" }}
-              >
+              <div className="absolute inset-8 rounded-sm border-gold-hairline glass-strong shadow-luxury" style={{ transform: "translateZ(0px)" }} />
+              <div className="absolute inset-12 rounded-sm border border-primary/20 bg-charcoal/70 overflow-hidden" style={{ transform: "translateZ(40px)" }}>
                 <svg viewBox="0 0 200 200" className="w-full h-full">
                   <defs>
                     <linearGradient id="goldL" x1="0" x2="1">
@@ -361,24 +481,16 @@ function DigitalTwin() {
                   </g>
                 </svg>
               </div>
-              {/* Layer 3 — gold wireframe overlay */}
               <motion.div
                 animate={{ opacity: [0.4, 0.8, 0.4] }}
                 transition={{ duration: 4, repeat: Infinity }}
                 className="absolute inset-16 rounded-sm border border-primary/40"
                 style={{ transform: "translateZ(80px)", boxShadow: "0 0 40px rgba(197,160,89,0.25)" }}
               />
-              {/* Floating chips */}
-              <div
-                className="absolute top-2 right-2 glass px-3 py-1.5 rounded-sm text-[10px] uppercase tracking-[0.2em] text-primary"
-                style={{ transform: "translateZ(120px)" }}
-              >
+              <div className="absolute top-2 right-2 glass px-3 py-1.5 rounded-sm text-[10px] uppercase tracking-[0.2em] text-primary" style={{ transform: "translateZ(120px)" }}>
                 Live · BIM 360
               </div>
-              <div
-                className="absolute bottom-2 left-2 glass px-3 py-1.5 rounded-sm text-[10px] uppercase tracking-[0.2em] text-primary flex items-center gap-1.5"
-                style={{ transform: "translateZ(120px)" }}
-              >
+              <div className="absolute bottom-2 left-2 glass px-3 py-1.5 rounded-sm text-[10px] uppercase tracking-[0.2em] text-primary flex items-center gap-1.5" style={{ transform: "translateZ(120px)" }}>
                 <Sparkles className="w-3 h-3" /> Synced 12s ago
               </div>
             </motion.div>
@@ -421,10 +533,10 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
 
 function ImpactCounters() {
   const stats = [
-    { value: 320, suffix: "+", label: "Projects Completed" },
-    { value: 48000, suffix: "t", label: "Material Supplied" },
-    { value: 180, suffix: "+", label: "Events Produced" },
-    { value: 18, suffix: "", label: "Years of Excellence" },
+    { value: 300, suffix: "+", label: "Projects Completed" },
+    { value: 10000, suffix: "+", label: "Material Supplied" },
+    { value: 60, suffix: "+", label: "Events Produced" },
+    { value: 2021, suffix: "", label: "Est. Year" },
   ];
   return (
     <section className="relative py-24 px-6 lg:px-10 border-y border-border">
@@ -437,46 +549,6 @@ function ImpactCounters() {
             <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground mt-3">{s.label}</div>
           </Reveal>
         ))}
-      </div>
-    </section>
-  );
-}
-
-/* ---------------- SUSTAINABILITY ---------------- */
-function SustainabilityPreview() {
-  return (
-    <section className="relative py-32 px-6 lg:px-10">
-      <div className="mx-auto max-w-[1440px] grid lg:grid-cols-12 gap-12 items-center">
-        <Reveal className="lg:col-span-5">
-          <Eyebrow>Sustainability ledger</Eyebrow>
-          <h2 className="font-display text-4xl sm:text-5xl mt-4 leading-tight">
-            Greener by design, by audit, by default.
-          </h2>
-          <p className="text-muted-foreground mt-6 leading-relaxed">
-            Our Green Score tracks embodied carbon, recycled content, and on-site waste across every active project — published quarterly.
-          </p>
-          <Link to="/sustainability" className="inline-flex items-center gap-2 text-sm text-primary mt-8 group">
-            Read the ledger <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </Reveal>
-
-        <Reveal delay={0.1} className="lg:col-span-7">
-          <div className="grid sm:grid-cols-3 gap-4">
-            <div className="glass p-8 rounded-sm">
-              <Leaf className="w-6 h-6 text-primary mb-4" />
-              <div className="font-display text-4xl text-gradient-gold">A+</div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Green Score</div>
-            </div>
-            <div className="glass p-8 rounded-sm">
-              <div className="font-display text-4xl text-gradient-gold">62%</div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Recycled inputs</div>
-            </div>
-            <div className="glass p-8 rounded-sm">
-              <div className="font-display text-4xl text-gradient-gold">-41%</div>
-              <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-2">Site waste vs benchmark</div>
-            </div>
-          </div>
-        </Reveal>
       </div>
     </section>
   );

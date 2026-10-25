@@ -1,191 +1,340 @@
-import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { LogOut, FileText, Building2, Loader2 } from "lucide-react";
-import { SiteShell } from "@/components/site/SiteShell";
-import { Reveal, Eyebrow } from "@/components/site/Reveal";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  "https://alxvakgaosrpnudmxerw.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFseHZha2dhb3NycG51ZG14ZXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NjIxNDUsImV4cCI6MjEwODMzODE0NX0.y4wMaVGjL9iaH_llYGE0Q4pcutpFM7AYaTFWWecgc18"
+);
+
+const CATEGORIES = [
+  { id: "civil", label: "Civil Works", icon: "🏗" },
+  { id: "interior", label: "Interior Design", icon: "🏛" },
+  { id: "events", label: "Event Management", icon: "🎪" },
+  { id: "supplies", label: "Contracts & Supplies", icon: "📦" },
+  { id: "hero", label: "Hero Slideshow", icon: "🖼" },
+];
 
 export const Route = createFileRoute("/portal")({
-  head: () => ({
-    meta: [
-      { title: "Client Portal — Kven Solutions" },
-      { name: "description", content: "Live project progress, documents, and submissions." },
-    ],
-  }),
   component: PortalPage,
 });
 
-interface ProjectRow {
-  id: string;
-  title: string;
-  vertical: string;
-  status: string;
-  progress_pct: number;
-  started_at: string | null;
-  eta: string | null;
-}
-
-interface RFQRow {
-  id: string;
-  reference_code: string;
-  vertical: string;
-  status: string;
-  created_at: string;
-}
-
 function PortalPage() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState<string>("");
-  const [projects, setProjects] = useState<ProjectRow[]>([]);
-  const [rfqs, setRfqs] = useState<RFQRow[]>([]);
+  const [password, setPassword] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [category, setCategory] = useState("civil");
+  const [uploading, setUploading] = useState(false);
+  const [images, setImages] = useState<any[]>([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const ADMIN_PASSWORD = "kven2024";
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const { data: sess } = await supabase.auth.getSession();
-      if (!sess.session) {
-        navigate({ to: "/login" });
-        return;
-      }
-      if (!mounted) return;
-      setEmail(sess.session.user.email ?? "");
-      const [{ data: p }, { data: r }] = await Promise.all([
-        supabase.from("projects").select("id,title,vertical,status,progress_pct,started_at,eta").order("created_at", { ascending: false }),
-        supabase.from("rfq_submissions").select("id,reference_code,vertical,status,created_at").order("created_at", { ascending: false }),
-      ]);
-      if (!mounted) return;
-      setProjects((p as ProjectRow[]) ?? []);
-      setRfqs((r as RFQRow[]) ?? []);
-      setLoading(false);
-    };
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!session) navigate({ to: "/login" });
-    });
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
-  }, [navigate]);
+    if (loggedIn) fetchImages();
+  }, [loggedIn, category]);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    toast.success("Signed out");
-    navigate({ to: "/" });
+  const fetchImages = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.storage
+      .from("works-images")
+      .list(category, { sortBy: { column: "created_at", order: "desc" } });
+    if (error) {
+      setMessage("Error loading images");
+    } else {
+      setImages(data || []);
+    }
+    setLoading(false);
   };
 
-  if (loading) {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setMessage("");
+
+    for (const file of Array.from(files)) {
+      const ext = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const filePath = `${category}/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from("works-images")
+        .upload(filePath, file);
+
+      if (error) {
+        setMessage(`Error uploading ${file.name}`);
+      }
+    }
+
+    setMessage(`✅ ${files.length} image(s) uploaded successfully!`);
+    setUploading(false);
+    fetchImages();
+    e.target.value = "";
+  };
+
+  const handleDelete = async (fileName: string) => {
+    const { error } = await supabase.storage
+      .from("works-images")
+      .remove([`${category}/${fileName}`]);
+
+    if (error) {
+      setMessage("Error deleting image");
+    } else {
+      setMessage("🗑 Image deleted successfully!");
+      setDeleteConfirm(null);
+      fetchImages();
+    }
+  };
+
+  const getImageUrl = (fileName: string) => {
+    const { data } = supabase.storage
+      .from("works-images")
+      .getPublicUrl(`${category}/${fileName}`);
+    return data.publicUrl;
+  };
+
+  // Login screen
+  if (!loggedIn) {
     return (
-      <SiteShell>
-        <div className="pt-40 grid place-items-center min-h-[60vh]">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <div style={{
+        minHeight: "100vh", background: "#0a0a0a",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "'Jost', sans-serif"
+      }}>
+        <div style={{
+          background: "#0d0d0d", border: "1px solid #c9a84c33",
+          padding: "48px", width: "360px", textAlign: "center"
+        }}>
+          <div style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "24px", color: "#c9a84c",
+            letterSpacing: "3px", marginBottom: "8px"
+          }}>KVEN SOLUTIONS</div>
+          <div style={{ fontSize: "11px", color: "#4a3f30", letterSpacing: "2px", marginBottom: "40px" }}>
+            ADMIN PORTAL
+          </div>
+
+          <input
+            type="password"
+            placeholder="Enter admin password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && password === ADMIN_PASSWORD && setLoggedIn(true)}
+            style={{
+              width: "100%", background: "#111",
+              border: "1px solid #c9a84c33", color: "#f0e6c8",
+              padding: "14px 16px", fontSize: "13px",
+              outline: "none", marginBottom: "16px",
+              fontFamily: "'Jost', sans-serif", boxSizing: "border-box"
+            }}
+          />
+
+          {password && password !== ADMIN_PASSWORD && (
+            <div style={{ color: "#c9a84c", fontSize: "12px", marginBottom: "12px" }}>
+              ⚠️ Incorrect password
+            </div>
+          )}
+
+          <button
+            onClick={() => password === ADMIN_PASSWORD && setLoggedIn(true)}
+            style={{
+              width: "100%", padding: "14px",
+              background: "#c9a84c", border: "none",
+              color: "#0a0a0a", fontSize: "11px",
+              letterSpacing: "3px", textTransform: "uppercase",
+              cursor: "pointer", fontFamily: "'Jost', sans-serif",
+              fontWeight: 500
+            }}
+          >
+            Login
+          </button>
         </div>
-      </SiteShell>
+      </div>
     );
   }
 
+  // Admin dashboard
   return (
-    <SiteShell>
-      <section className="pt-40 pb-12 px-6 lg:px-10">
-        <div className="mx-auto max-w-[1440px] flex justify-between items-end flex-wrap gap-4">
-          <Reveal>
-            <Eyebrow>Client portal</Eyebrow>
-            <h1 className="font-display text-4xl sm:text-5xl mt-4">Welcome back.</h1>
-            <p className="text-sm text-muted-foreground mt-2">{email}</p>
-          </Reveal>
-          <button onClick={signOut} className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground border-gold-hairline px-4 py-2.5 rounded-sm">
-            <LogOut className="w-3.5 h-3.5" /> Sign out
-          </button>
+    <div style={{
+      minHeight: "100vh", background: "#0a0a0a",
+      fontFamily: "'Jost', sans-serif", color: "#f0e6c8"
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "20px 48px",
+        borderBottom: "1px solid #c9a84c22",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        background: "#0d0d0d"
+      }}>
+        <div style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: "20px", color: "#c9a84c", letterSpacing: "3px"
+        }}>
+          KVEN SOLUTIONS — Admin Portal
         </div>
-      </section>
+        <button
+          onClick={() => setLoggedIn(false)}
+          style={{
+            background: "none", border: "1px solid #c9a84c33",
+            color: "#4a3f30", padding: "8px 20px",
+            fontSize: "11px", letterSpacing: "2px",
+            textTransform: "uppercase", cursor: "pointer"
+          }}
+        >
+          Logout
+        </button>
+      </div>
 
-      <section className="px-6 lg:px-10 pb-12">
-        <div className="mx-auto max-w-[1440px]">
-          <h2 className="font-display text-2xl mb-6">Active projects</h2>
-          {projects.length === 0 ? (
-            <EmptyState icon={Building2} title="No active projects yet" body="Once we kick off your first project, you'll see live progress here." cta={{ label: "Open an RFQ", to: "/rfq" }} />
-          ) : (
-            <div className="grid md:grid-cols-2 gap-5">
-              {projects.map((p) => (
-                <div key={p.id} className="glass rounded-sm p-6">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.3em] text-primary">{p.vertical}</div>
-                      <h3 className="font-display text-xl mt-2">{p.title}</h3>
-                    </div>
-                    <span className="text-[10px] uppercase tracking-[0.2em] px-2 py-1 border-gold-hairline rounded-sm">{p.status.replace("_", " ")}</span>
+      <div style={{ padding: "48px" }}>
+        <p style={{ fontSize: "10px", letterSpacing: "5px", color: "#c9a84c", textTransform: "uppercase", marginBottom: "8px" }}>
+          Manage
+        </p>
+        <h1 style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: "36px", fontWeight: 300, marginBottom: "48px"
+        }}>
+          Upload Works Images
+        </h1>
+
+        {/* Category Selection */}
+        <div style={{ marginBottom: "32px" }}>
+          <div style={{ fontSize: "9px", color: "#4a3f30", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "12px" }}>
+            Select Category
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setCategory(cat.id)}
+                style={{
+                  padding: "10px 20px",
+                  background: category === cat.id ? "#c9a84c11" : "#0d0d0d",
+                  border: `1px solid ${category === cat.id ? "#c9a84c" : "#c9a84c22"}`,
+                  color: category === cat.id ? "#c9a84c" : "#4a3f30",
+                  fontSize: "12px", cursor: "pointer",
+                  fontFamily: "'Jost', sans-serif",
+                  transition: "all 0.2s"
+                }}
+              >
+                {cat.icon} {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Upload Area */}
+        <div style={{
+          border: "2px dashed #c9a84c33",
+          padding: "48px", textAlign: "center",
+          marginBottom: "32px", background: "#0d0d0d",
+          cursor: "pointer"
+        }}
+          onClick={() => document.getElementById("fileInput")?.click()}
+        >
+          <div style={{ fontSize: "48px", marginBottom: "16px" }}>📤</div>
+          <div style={{ fontSize: "16px", color: "#c9a84c", marginBottom: "8px" }}>
+            Click to upload images
+          </div>
+          <div style={{ fontSize: "12px", color: "#4a3f30" }}>
+            Supports JPG, JPEG, PNG, WEBP — Multiple files allowed
+          </div>
+          <input
+            id="fileInput"
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleUpload}
+            style={{ display: "none" }}
+          />
+        </div>
+
+        {uploading && (
+          <div style={{ textAlign: "center", color: "#c9a84c", marginBottom: "24px", fontSize: "14px" }}>
+            ⏳ Uploading...
+          </div>
+        )}
+
+        {message && (
+          <div style={{
+            padding: "12px 16px", border: "1px solid #c9a84c33",
+            color: "#c9a84c", fontSize: "13px", marginBottom: "32px"
+          }}>
+            {message}
+          </div>
+        )}
+
+        {/* Images Grid */}
+        <div style={{ fontSize: "9px", color: "#4a3f30", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "16px" }}>
+          {images.length} image(s) in {CATEGORIES.find(c => c.id === category)?.label}
+        </div>
+
+        {loading ? (
+          <div style={{ color: "#4a3f30", fontSize: "13px" }}>Loading images...</div>
+        ) : images.length === 0 ? (
+          <div style={{ color: "#4a3f30", fontSize: "13px" }}>No images uploaded yet for this category.</div>
+        ) : (
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+            gap: "16px"
+          }}>
+            {images.map(img => (
+              <div key={img.name} style={{ position: "relative", background: "#0d0d0d", border: "1px solid #c9a84c22" }}>
+                <img
+                  src={getImageUrl(img.name)}
+                  alt={img.name}
+                  style={{ width: "100%", height: "160px", objectFit: "cover", display: "block" }}
+                />
+                <div style={{ padding: "8px" }}>
+                  <div style={{ fontSize: "10px", color: "#4a3f30", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {img.name}
                   </div>
-                  <div className="mt-6">
-                    <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                      <span>Progress</span><span>{p.progress_pct}%</span>
+                  {deleteConfirm === img.name ? (
+                    <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
+                      <button
+                        onClick={() => handleDelete(img.name)}
+                        style={{
+                          flex: 1, padding: "6px", background: "#ff4444",
+                          border: "none", color: "white", fontSize: "10px",
+                          cursor: "pointer", fontFamily: "'Jost', sans-serif"
+                        }}
+                      >
+                        Confirm Delete
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(null)}
+                        style={{
+                          flex: 1, padding: "6px", background: "transparent",
+                          border: "1px solid #c9a84c33", color: "#4a3f30",
+                          fontSize: "10px", cursor: "pointer",
+                          fontFamily: "'Jost', sans-serif"
+                        }}
+                      >
+                        Cancel
+                      </button>
                     </div>
-                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-gold-deep to-gold-soft" style={{ width: `${p.progress_pct}%` }} />
-                    </div>
-                  </div>
-                  {(p.started_at || p.eta) && (
-                    <div className="grid grid-cols-2 gap-4 text-xs mt-6 pt-4 border-t border-border">
-                      <div><div className="text-muted-foreground uppercase tracking-[0.2em] text-[10px]">Started</div><div className="mt-1">{p.started_at ?? "—"}</div></div>
-                      <div><div className="text-muted-foreground uppercase tracking-[0.2em] text-[10px]">ETA</div><div className="mt-1">{p.eta ?? "—"}</div></div>
-                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setDeleteConfirm(img.name)}
+                      style={{
+                        width: "100%", marginTop: "8px", padding: "6px",
+                        background: "transparent", border: "1px solid #ff444433",
+                        color: "#ff6666", fontSize: "10px",
+                        cursor: "pointer", fontFamily: "'Jost', sans-serif"
+                      }}
+                    >
+                      🗑 Delete
+                    </button>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="px-6 lg:px-10 pb-32">
-        <div className="mx-auto max-w-[1440px]">
-          <h2 className="font-display text-2xl mb-6">Submission history</h2>
-          {rfqs.length === 0 ? (
-            <EmptyState icon={FileText} title="No submissions yet" body="Your RFQs and supply inquiries will appear here." />
-          ) : (
-            <div className="border-gold-hairline rounded-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-secondary/40">
-                  <tr className="text-left text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    <th className="p-4">Reference</th>
-                    <th className="p-4">Service</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Submitted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rfqs.map((r) => (
-                    <tr key={r.id} className="border-t border-border">
-                      <td className="p-4 font-mono text-primary">{r.reference_code}</td>
-                      <td className="p-4 capitalize">{r.vertical}</td>
-                      <td className="p-4 capitalize">{r.status}</td>
-                      <td className="p-4 text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </section>
-    </SiteShell>
-  );
-}
-
-function EmptyState({ icon: Icon, title, body, cta }: { icon: typeof Building2; title: string; body: string; cta?: { label: string; to: string } }) {
-  return (
-    <div className="border-gold-hairline rounded-sm p-12 text-center">
-      <div className="mx-auto h-12 w-12 grid place-items-center rounded-sm border-gold-hairline text-primary">
-        <Icon className="w-5 h-5" />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      <h3 className="font-display text-xl mt-6">{title}</h3>
-      <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">{body}</p>
-      {cta && (
-        <Link to={cta.to} className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-primary text-primary-foreground text-sm rounded-sm">
-          {cta.label}
-        </Link>
-      )}
     </div>
   );
 }
