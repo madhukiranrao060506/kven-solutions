@@ -1,318 +1,376 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Check, Loader2, CheckCircle2 } from "lucide-react";
-import { z } from "zod";
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
 import { SiteShell } from "@/components/site/SiteShell";
 import { Reveal, Eyebrow } from "@/components/site/Reveal";
-import { VERTICALS, type Vertical } from "@/data/site";
-import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { ArrowRight, ArrowLeft, Check } from "lucide-react";
+import emailjs from "@emailjs/browser";
+
+const supabase = createClient(
+  "https://alxvakgaosrpnudmxerw.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFseHZha2dhb3NycG51ZG14ZXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NjIxNDUsImV4cCI6MjEwODMzODE0NX0.y4wMaVGjL9iaH_llYGE0Q4pcutpFM7AYaTFWWecgc18"
+);
 
 export const Route = createFileRoute("/rfq")({
-  head: () => ({
-    meta: [
-      { title: "Request a Quote — Kven Solutions" },
-      { name: "description", content: "Tell us about your project. A multi-step adaptive form for civil, interior, events, or supplies engagements." },
-      { property: "og:title", content: "Request a Quote — Kven Solutions" },
-      { property: "og:description", content: "Senior partner reply within one business day." },
-    ],
-  }),
   component: RFQPage,
 });
 
-const baseSchema = z.object({
-  contact_name: z.string().trim().min(1).max(100),
-  contact_email: z.string().trim().email().max(255),
-  contact_phone: z.string().trim().max(40).optional(),
-  company: z.string().trim().max(120).optional(),
-});
+const SERVICES = [
+  { id: "civil", label: "Civil Works", desc: "Structural engineering & construction" },
+  { id: "interior", label: "Interior Design", desc: "Bespoke residential & commercial interiors" },
+  { id: "events", label: "Event Management", desc: "Corporate & cultural event production" },
+  { id: "supplies", label: "Contracts & Supplies", desc: "Material procurement & logistics" },
+];
 
-interface RFQState {
-  vertical?: Vertical;
-  details: Record<string, string>;
-  budget: string;
-  timeline: string;
-  contact: { name: string; email: string; phone: string; company: string };
-}
-
-const initial: RFQState = {
-  details: {},
-  budget: "$50k – $250k",
-  timeline: "1–3 months",
-  contact: { name: "", email: "", phone: "", company: "" },
-};
+const BUDGETS = ["Below ₹1 Lakh", "₹1 – ₹3 Lakhs", "₹3 – ₹5 Lakhs", "₹5 – ₹10 Lakhs", "Above ₹10 Lakhs"];
+const TIMELINES = ["< 1 month", "1–3 months", "3–6 months", "6–12 months", "> 1 year"];
 
 function RFQPage() {
   const [step, setStep] = useState(0);
-  const [state, setState] = useState<RFQState>(initial);
-  const [submitting, setSubmitting] = useState(false);
-  const [reference, setReference] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
-  const next = () => setStep((s) => Math.min(s + 1, 4));
-  const back = () => setStep((s) => Math.max(s - 1, 0));
+  const [form, setForm] = useState({
+    service: "",
+    spaceType: "",
+    area: "",
+    style: "",
+    readyBy: "",
+    budget: "",
+    timeline: "",
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
 
-  const submit = async () => {
-    const parsed = baseSchema.safeParse({
-      contact_name: state.contact.name,
-      contact_email: state.contact.email,
-      contact_phone: state.contact.phone || undefined,
-      company: state.contact.company || undefined,
-    });
-    if (!parsed.success || !state.vertical) {
-      toast.error("Please complete all required fields.");
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!form.name || !form.email || !form.phone) {
+      setError("Please fill in your name, email and phone.");
       return;
     }
-    setSubmitting(true);
-    const { data: auth } = await supabase.auth.getUser();
-    const { data, error } = await supabase
-      .from("rfq_submissions")
-      .insert({
-        user_id: auth.user?.id ?? null,
-        vertical: state.vertical,
-        contact_name: parsed.data.contact_name,
-        contact_email: parsed.data.contact_email,
-        contact_phone: parsed.data.contact_phone ?? null,
-        company: parsed.data.company ?? null,
-        payload: { details: state.details, budget: state.budget, timeline: state.timeline },
-      })
-      .select("reference_code")
-      .single();
-    setSubmitting(false);
-    if (error) {
-      toast.error("Submission failed. Please try again.");
-      return;
+    setSending(true);
+    setError("");
+
+    try {
+      await emailjs.init("buC7d6SAzfFH4RSpL");
+
+      const templateParams = {
+        client_name: form.name,
+        client_phone: form.phone,
+        client_email: form.email,
+        service: SERVICES.find(s => s.id === form.service)?.label || form.service,
+        space_type: form.spaceType,
+        area: form.area,
+        style: form.style,
+        ready_by: form.readyBy,
+        budget: form.budget,
+        timeline: form.timeline,
+        message: form.message || "No additional message",
+      };
+
+      // Send to Kven Solutions
+      await emailjs.send("KVEN_SOLUTIONS", "template_zcoum9r", templateParams);
+
+      // Send confirmation to customer
+      if (form.email) {
+        await emailjs.send("KVEN_SOLUTIONS", "template_5hrfits", {
+          ...templateParams,
+          time_slot: "To be confirmed",
+          date: "To be confirmed",
+          location: "Not specified",
+        });
+      }
+
+      // Save to Supabase
+      await supabase.from("APPOINTMENTS").insert({
+        name: form.name,
+        phone: form.phone,
+        email: form.email,
+        service: SERVICES.find(s => s.id === form.service)?.label || form.service,
+        space_type: form.spaceType,
+        area: form.area,
+        style: form.style,
+        budget: form.budget,
+        timeline: form.timeline,
+        message: form.message || "",
+      });
+
+      setSubmitted(true);
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+      console.error(err);
+    } finally {
+      setSending(false);
     }
-    setReference(data.reference_code);
-    setStep(5);
   };
 
-  return (
-    <SiteShell>
-      <section className="pt-40 pb-12 px-6 lg:px-10">
-        <div className="mx-auto max-w-3xl">
-          <Reveal>
-            <Eyebrow>Request a quote</Eyebrow>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl mt-6 leading-[1.05]">
-              Tell us about your <span className="italic text-gradient-gold">project.</span>
+  if (submitted) {
+    return (
+      <SiteShell>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-lg">
+            <div className="mx-auto mb-8 h-16 w-16 rounded-full bg-primary/10 grid place-items-center">
+              <Check className="w-8 h-8 text-primary" />
+            </div>
+            <Eyebrow>Submitted</Eyebrow>
+            <h1 className="font-display text-4xl sm:text-5xl mt-4">
+              Thank you, {form.name}.
             </h1>
-          </Reveal>
-
-          {step < 5 && (
-            <div className="mt-12 flex items-center gap-2">
-              {[0, 1, 2, 3, 4].map((s) => (
-                <div key={s} className={cn("h-1 flex-1 transition-all", s <= step ? "bg-primary" : "bg-border")} />
-              ))}
-            </div>
-          )}
+            <p className="text-muted-foreground mt-6 leading-relaxed">
+              Your request has been received. A confirmation has been sent to <strong>{form.email}</strong>.
+              Our team will contact you at <strong>{form.phone}</strong> within one business day.
+            </p>
+            <button
+              onClick={() => { setSubmitted(false); setStep(0); setForm({ service: "", spaceType: "", area: "", style: "", readyBy: "", budget: "", timeline: "", name: "", email: "", phone: "", message: "" }); }}
+              className="mt-8 inline-flex items-center gap-2 text-sm text-primary hover:gap-3 transition-all"
+            >
+              Submit another request <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </section>
+      </SiteShell>
+    );
+  }
 
-      <section className="px-6 lg:px-10 pb-32">
-        <div className="mx-auto max-w-3xl glass-strong rounded-sm p-8 sm:p-12 min-h-[420px]">
-          <AnimatePresence mode="wait">
-            <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-              {step === 0 && <StepVertical state={state} setState={setState} />}
-              {step === 1 && state.vertical && <StepDetails vertical={state.vertical} state={state} setState={setState} />}
-              {step === 2 && <StepBudget state={state} setState={setState} />}
-              {step === 3 && <StepContact state={state} setState={setState} />}
-              {step === 4 && <StepReview state={state} />}
-              {step === 5 && reference && <StepDone reference={reference} />}
-            </motion.div>
-          </AnimatePresence>
-
-          {step < 5 && (
-            <div className="flex justify-between mt-12 pt-8 border-t border-border">
-              <button onClick={back} disabled={step === 0} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-30">
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
-              {step < 4 ? (
-                <button onClick={next} disabled={step === 0 && !state.vertical} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 text-sm rounded-sm shadow-gold hover:bg-gold-soft transition-colors disabled:opacity-40">
-                  Continue <ArrowRight className="w-4 h-4" />
-                </button>
-              ) : (
-                <button onClick={submit} disabled={submitting} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 text-sm rounded-sm shadow-gold hover:bg-gold-soft transition-colors disabled:opacity-40">
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Submit RFQ
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-    </SiteShell>
-  );
-}
-
-function StepVertical({ state, setState }: { state: RFQState; setState: (s: RFQState) => void }) {
-  return (
-    <div>
-      <h2 className="font-display text-2xl">Which service?</h2>
-      <p className="text-sm text-muted-foreground mt-2">Pick the vertical that best fits your project.</p>
+  const steps = [
+    // Step 0: Service
+    <div key="service" className="space-y-4">
+      <Reveal>
+        <Eyebrow>Step 1 of 4</Eyebrow>
+        <h2 className="font-display text-3xl sm:text-4xl mt-4">What can we help with?</h2>
+      </Reveal>
       <div className="grid sm:grid-cols-2 gap-3 mt-8">
-        {VERTICALS.map((v) => (
+        {SERVICES.map((s) => (
           <button
-            key={v.id}
-            onClick={() => setState({ ...state, vertical: v.id, details: {} })}
-            className={cn(
-              "text-left p-5 border rounded-sm transition-all flex gap-4",
-              state.vertical === v.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/40"
-            )}
+            key={s.id}
+            onClick={() => { set("service", s.id); setStep(1); }}
+            className={`text-left p-5 rounded-sm border transition-all ${
+              form.service === s.id
+                ? "border-primary bg-primary/5"
+                : "border-border hover:border-primary/50"
+            }`}
           >
-            <div className="h-10 w-10 grid place-items-center rounded-sm border-gold-hairline text-primary">
-              <v.icon className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-display text-lg">{v.title}</div>
-              <div className="text-xs text-muted-foreground mt-1">{v.tagline}</div>
-            </div>
+            <div className="font-display text-lg">{s.label}</div>
+            <div className="text-sm text-muted-foreground mt-1">{s.desc}</div>
           </button>
         ))}
       </div>
-    </div>
-  );
-}
+    </div>,
 
-const FIELD_MAP: Record<Vertical, { key: string; label: string; placeholder?: string }[]> = {
-  civil: [
-    { key: "project_type", label: "Project type", placeholder: "Bridge, tower, infrastructure..." },
-    { key: "site_area", label: "Site area (m²)", placeholder: "e.g. 4,500" },
-    { key: "location", label: "Site location", placeholder: "City, country" },
-    { key: "start", label: "Target start date" },
-  ],
-  interior: [
-    { key: "space_type", label: "Space type", placeholder: "Residence, office, hospitality..." },
-    { key: "area", label: "Area (m²)", placeholder: "e.g. 320" },
-    { key: "style", label: "Style preference", placeholder: "Modern, classical, industrial..." },
-    { key: "ready_by", label: "Ready by" },
-  ],
-  events: [
-    { key: "event_type", label: "Event type", placeholder: "Gala, launch, conference..." },
-    { key: "guests", label: "Guest count", placeholder: "e.g. 600" },
-    { key: "venue", label: "Venue status", placeholder: "Confirmed, scouting, need recommendation" },
-    { key: "date", label: "Event date" },
-  ],
-  supplies: [
-    { key: "category", label: "Material category", placeholder: "Cement, steel, finishes..." },
-    { key: "quantity", label: "Quantity / scale", placeholder: "e.g. 200 t/month" },
-    { key: "delivery", label: "Delivery location", placeholder: "City / site" },
-    { key: "frequency", label: "Frequency", placeholder: "One-off, recurring, contract" },
-  ],
-};
-
-function StepDetails({ vertical, state, setState }: { vertical: Vertical; state: RFQState; setState: (s: RFQState) => void }) {
-  const fields = FIELD_MAP[vertical];
-  return (
-    <div>
-      <h2 className="font-display text-2xl">Project details</h2>
-      <p className="text-sm text-muted-foreground mt-2">Just the essentials — we'll dive deeper on the call.</p>
-      <div className="grid sm:grid-cols-2 gap-4 mt-8">
-        {fields.map((f) => (
-          <div key={f.key} className="sm:col-span-1">
-            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{f.label}</label>
+    // Step 1: Project details
+    <div key="details" className="space-y-6">
+      <Reveal>
+        <Eyebrow>Step 2 of 4</Eyebrow>
+        <h2 className="font-display text-3xl sm:text-4xl mt-4">Tell us about the project.</h2>
+      </Reveal>
+      <div className="space-y-4 mt-8">
+        <div>
+          <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Space / Project type</label>
+          <input
+            value={form.spaceType}
+            onChange={e => set("spaceType", e.target.value)}
+            placeholder="e.g. Villa, Office, Warehouse..."
+            className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Area (sqft / sqm)</label>
             <input
-              value={state.details[f.key] || ""}
-              onChange={(e) => setState({ ...state, details: { ...state.details, [f.key]: e.target.value } })}
-              placeholder={f.placeholder}
-              className="w-full mt-1.5 px-4 py-3 bg-card border border-border rounded-sm focus:outline-none focus:border-primary text-sm"
+              value={form.area}
+              onChange={e => set("area", e.target.value)}
+              placeholder="e.g. 2000 sqft"
+              className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
             />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Style preference</label>
+            <input
+              value={form.style}
+              onChange={e => set("style", e.target.value)}
+              placeholder="e.g. Modern, Traditional..."
+              className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Ready to start by</label>
+          <input
+            value={form.readyBy}
+            onChange={e => set("readyBy", e.target.value)}
+            placeholder="e.g. 3 months, January 2025..."
+            className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+          />
+        </div>
+      </div>
+      <div className="flex justify-between pt-4">
+        <button onClick={() => setStep(0)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 text-sm rounded-sm hover:bg-gold-soft transition-colors">
+          Next <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>,
+
+    // Step 2: Budget & Timeline
+    <div key="budget" className="space-y-6">
+      <Reveal>
+        <Eyebrow>Step 3 of 4</Eyebrow>
+        <h2 className="font-display text-3xl sm:text-4xl mt-4">Scope & budget.</h2>
+      </Reveal>
+      <div className="space-y-6 mt-8">
+        <div>
+          <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-3">Budget range</label>
+          <div className="flex flex-wrap gap-2">
+            {BUDGETS.map(b => (
+              <button
+                key={b}
+                onClick={() => set("budget", b)}
+                className={`px-4 py-2 text-sm rounded-sm border transition-all ${
+                  form.budget === b ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"
+                }`}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-3">Delivery timeline</label>
+          <div className="flex flex-wrap gap-2">
+            {TIMELINES.map(t => (
+              <button
+                key={t}
+                onClick={() => set("timeline", t)}
+                className={`px-4 py-2 text-sm rounded-sm border transition-all ${
+                  form.timeline === t ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-between pt-4">
+        <button onClick={() => setStep(1)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button onClick={() => setStep(3)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 text-sm rounded-sm hover:bg-gold-soft transition-colors">
+          Next <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>,
+
+    // Step 3: Contact
+    <div key="contact" className="space-y-6">
+      <Reveal>
+        <Eyebrow>Step 4 of 4</Eyebrow>
+        <h2 className="font-display text-3xl sm:text-4xl mt-4">Your contact details.</h2>
+      </Reveal>
+
+      <div className="bg-secondary/30 rounded-sm p-4 text-sm space-y-2 mt-6">
+        <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">Review</div>
+        {[
+          ["Service", SERVICES.find(s => s.id === form.service)?.label],
+          ["Space type", form.spaceType],
+          ["Area", form.area],
+          ["Style", form.style],
+          ["Ready by", form.readyBy],
+          ["Budget", form.budget],
+          ["Timeline", form.timeline],
+        ].filter(([, v]) => v).map(([k, v]) => (
+          <div key={k} className="flex justify-between">
+            <span className="text-muted-foreground">{k}</span>
+            <span>{v}</span>
           </div>
         ))}
       </div>
-    </div>
-  );
-}
 
-function StepBudget({ state, setState }: { state: RFQState; setState: (s: RFQState) => void }) {
-  const budgets = ["< $50k", "$50k – $250k", "$250k – $1M", "$1M – $5M", "$5M+"];
-  const timelines = ["< 1 month", "1–3 months", "3–6 months", "6–12 months", "12+ months"];
-  return (
-    <div className="space-y-10">
-      <div>
-        <h2 className="font-display text-2xl">Investment range</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-6">
-          {budgets.map((b) => (
-            <button key={b} onClick={() => setState({ ...state, budget: b })} className={cn("p-3 text-sm border rounded-sm transition-all", state.budget === b ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40")}>{b}</button>
-          ))}
+      <div className="space-y-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Full Name *</label>
+            <input
+              value={form.name}
+              onChange={e => set("name", e.target.value)}
+              placeholder="Your name"
+              className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Phone *</label>
+            <input
+              value={form.phone}
+              onChange={e => set("phone", e.target.value)}
+              placeholder="+91 XXXXX XXXXX"
+              className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Email *</label>
+          <input
+            value={form.email}
+            onChange={e => set("email", e.target.value)}
+            placeholder="your@email.com"
+            type="email"
+            className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Additional message</label>
+          <textarea
+            value={form.message}
+            onChange={e => set("message", e.target.value)}
+            placeholder="Anything else you'd like us to know..."
+            rows={3}
+            className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors resize-none"
+          />
         </div>
       </div>
-      <div>
-        <h2 className="font-display text-2xl">Timeline</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-6">
-          {timelines.map((t) => (
-            <button key={t} onClick={() => setState({ ...state, timeline: t })} className={cn("p-3 text-sm border rounded-sm transition-all", state.timeline === t ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40")}>{t}</button>
-          ))}
+
+      {error && (
+        <div className="text-sm text-destructive border border-destructive/30 rounded-sm px-4 py-3">
+          {error}
         </div>
+      )}
+
+      <div className="flex justify-between pt-4">
+        <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={sending}
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 text-sm rounded-sm hover:bg-gold-soft transition-colors disabled:opacity-60"
+        >
+          {sending ? "Sending..." : "Submit RFQ"} {!sending && <Check className="w-4 h-4" />}
+        </button>
       </div>
-    </div>
-  );
-}
+    </div>,
+  ];
 
-function StepContact({ state, setState }: { state: RFQState; setState: (s: RFQState) => void }) {
-  const c = state.contact;
-  const set = (k: keyof typeof c, v: string) => setState({ ...state, contact: { ...c, [k]: v } });
   return (
-    <div>
-      <h2 className="font-display text-2xl">Your contact</h2>
-      <p className="text-sm text-muted-foreground mt-2">A senior partner will respond within one business day.</p>
-      <div className="grid sm:grid-cols-2 gap-4 mt-8">
-        <Input label="Full name *" value={c.name} onChange={(v) => set("name", v)} />
-        <Input label="Email *" type="email" value={c.email} onChange={(v) => set("email", v)} />
-        <Input label="Phone" value={c.phone} onChange={(v) => set("phone", v)} />
-        <Input label="Company" value={c.company} onChange={(v) => set("company", v)} />
-      </div>
-    </div>
-  );
-}
-
-function Input({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
-  return (
-    <div>
-      <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="w-full mt-1.5 px-4 py-3 bg-card border border-border rounded-sm focus:outline-none focus:border-primary text-sm" />
-    </div>
-  );
-}
-
-function StepReview({ state }: { state: RFQState }) {
-  const v = VERTICALS.find((x) => x.id === state.vertical);
-  return (
-    <div>
-      <h2 className="font-display text-2xl">Review</h2>
-      <p className="text-sm text-muted-foreground mt-2">A quick summary before submission.</p>
-      <dl className="mt-8 space-y-4 text-sm">
-        <Row label="Service" value={v?.title} />
-        {Object.entries(state.details).map(([k, val]) => <Row key={k} label={k.replace(/_/g, " ")} value={val} />)}
-        <Row label="Budget" value={state.budget} />
-        <Row label="Timeline" value={state.timeline} />
-        <Row label="Contact" value={`${state.contact.name} · ${state.contact.email}`} />
-      </dl>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value?: string }) {
-  if (!value) return null;
-  return (
-    <div className="grid grid-cols-3 gap-4 py-3 border-b border-border">
-      <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground capitalize">{label}</dt>
-      <dd className="col-span-2">{value}</dd>
-    </div>
-  );
-}
-
-function StepDone({ reference }: { reference: string }) {
-  return (
-    <div className="text-center py-12">
-      <div className="mx-auto h-16 w-16 grid place-items-center rounded-full bg-primary/15">
-        <CheckCircle2 className="w-8 h-8 text-primary" />
-      </div>
-      <h2 className="font-display text-3xl mt-6">RFQ received.</h2>
-      <p className="text-sm text-muted-foreground mt-3 max-w-md mx-auto">Reference <span className="text-primary font-mono">{reference}</span>. A senior partner will be in touch within one business day.</p>
-      <div className="mt-8 flex justify-center gap-3">
-        <Link to="/" className="px-6 py-3 border-gold-hairline text-sm rounded-sm hover:bg-primary/10 transition-colors">Return home</Link>
-        <Link to="/portfolio" className="px-6 py-3 bg-primary text-primary-foreground text-sm rounded-sm">View portfolio</Link>
-      </div>
-    </div>
+    <SiteShell>
+      <section className="relative min-h-screen py-32 px-6 lg:px-10">
+        <div className="mx-auto max-w-2xl">
+          <div className="flex gap-1 mb-12">
+            {[0,1,2,3].map(i => (
+              <div
+                key={i}
+                className={`h-0.5 flex-1 transition-all duration-500 ${i <= step ? "bg-primary" : "bg-border"}`}
+              />
+            ))}
+          </div>
+          {steps[step]}
+        </div>
+      </section>
+    </SiteShell>
   );
 }

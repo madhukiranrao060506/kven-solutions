@@ -19,6 +19,48 @@ export const Route = createFileRoute("/portal")({
   component: PortalPage,
 });
 
+function BookingsList() {
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      const { data, error } = await supabase
+        .from("APPOINTMENTS")
+        .select("*")
+        
+      if (!error && data) setBookings(data);
+      setLoading(false);
+    };
+    fetchBookings();
+  }, []);
+
+  if (loading) return <div style={{ color: "#4a3f30", fontSize: "13px" }}>Loading bookings...</div>;
+
+  if (bookings.length === 0) return (
+    <div style={{ color: "#4a3f30", fontSize: "13px" }}>No bookings yet.</div>
+  );
+
+  return (
+    <div style={{ background: "#0d0d0d", border: "1px solid #c9a84c22", overflowX: "auto" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1.5fr 1fr 1fr", padding: "12px 16px", borderBottom: "1px solid #c9a84c22", minWidth: "600px" }}>
+        {["Name", "Phone", "Email", "Service", "Budget"].map(h => (
+          <div key={h} style={{ fontSize: "9px", color: "#c9a84c", letterSpacing: "2px", textTransform: "uppercase" }}>{h}</div>
+        ))}
+      </div>
+      {bookings.map((b, i) => (
+        <div key={i} style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1.5fr 1fr 1fr", padding: "14px 16px", borderBottom: "1px solid #c9a84c11", minWidth: "600px" }}>
+          <div style={{ fontSize: "12px", color: "#f0e6c8" }}>{b.name}</div>
+          <div style={{ fontSize: "12px", color: "#8a7a65" }}>{b.phone}</div>
+          <div style={{ fontSize: "11px", color: "#8a7a65" }}>{b.email}</div>
+          <div style={{ fontSize: "12px", color: "#c9a84c" }}>{b.service}</div>
+          <div style={{ fontSize: "12px", color: "#8a7a65" }}>{b.budget}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PortalPage() {
   const [password, setPassword] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
@@ -28,12 +70,13 @@ function PortalPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"images" | "bookings">("images");
 
   const ADMIN_PASSWORD = "kven2024";
 
   useEffect(() => {
-    if (loggedIn) fetchImages();
-  }, [loggedIn, category]);
+    if (loggedIn && activeTab === "images") fetchImages();
+  }, [loggedIn, category, activeTab]);
 
   const fetchImages = async () => {
     setLoading(true);
@@ -96,7 +139,6 @@ function PortalPage() {
     return data.publicUrl;
   };
 
-  // Login screen
   if (!loggedIn) {
     return (
       <div style={{
@@ -156,7 +198,6 @@ function PortalPage() {
     );
   }
 
-  // Admin dashboard
   return (
     <div style={{
       minHeight: "100vh", background: "#0a0a0a",
@@ -188,151 +229,195 @@ function PortalPage() {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: "flex", borderBottom: "1px solid #c9a84c22", background: "#0d0d0d" }}>
+        {[
+          { id: "images", label: "📸 Upload Images" },
+          { id: "bookings", label: "📋 Bookings" },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as "images" | "bookings")}
+            style={{
+              padding: "16px 32px",
+              background: "none", border: "none",
+              borderBottom: activeTab === tab.id ? "2px solid #c9a84c" : "2px solid transparent",
+              color: activeTab === tab.id ? "#c9a84c" : "#4a3f30",
+              fontSize: "12px", letterSpacing: "2px",
+              textTransform: "uppercase", cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div style={{ padding: "48px" }}>
-        <p style={{ fontSize: "10px", letterSpacing: "5px", color: "#c9a84c", textTransform: "uppercase", marginBottom: "8px" }}>
-          Manage
-        </p>
-        <h1 style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: "36px", fontWeight: 300, marginBottom: "48px"
-        }}>
-          Upload Works Images
-        </h1>
 
-        {/* Category Selection */}
-        <div style={{ marginBottom: "32px" }}>
-          <div style={{ fontSize: "9px", color: "#4a3f30", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "12px" }}>
-            Select Category
-          </div>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setCategory(cat.id)}
-                style={{
-                  padding: "10px 20px",
-                  background: category === cat.id ? "#c9a84c11" : "#0d0d0d",
-                  border: `1px solid ${category === cat.id ? "#c9a84c" : "#c9a84c22"}`,
-                  color: category === cat.id ? "#c9a84c" : "#4a3f30",
-                  fontSize: "12px", cursor: "pointer",
-                  fontFamily: "'Jost', sans-serif",
-                  transition: "all 0.2s"
-                }}
-              >
-                {cat.icon} {cat.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* IMAGES TAB */}
+        {activeTab === "images" && (
+          <>
+            <p style={{ fontSize: "10px", letterSpacing: "5px", color: "#c9a84c", textTransform: "uppercase", marginBottom: "8px" }}>
+              Manage
+            </p>
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "36px", fontWeight: 300, marginBottom: "48px"
+            }}>
+              Upload Works Images
+            </h1>
 
-        {/* Upload Area */}
-        <div style={{
-          border: "2px dashed #c9a84c33",
-          padding: "48px", textAlign: "center",
-          marginBottom: "32px", background: "#0d0d0d",
-          cursor: "pointer"
-        }}
-          onClick={() => document.getElementById("fileInput")?.click()}
-        >
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>📤</div>
-          <div style={{ fontSize: "16px", color: "#c9a84c", marginBottom: "8px" }}>
-            Click to upload images
-          </div>
-          <div style={{ fontSize: "12px", color: "#4a3f30" }}>
-            Supports JPG, JPEG, PNG, WEBP — Multiple files allowed
-          </div>
-          <input
-            id="fileInput"
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleUpload}
-            style={{ display: "none" }}
-          />
-        </div>
-
-        {uploading && (
-          <div style={{ textAlign: "center", color: "#c9a84c", marginBottom: "24px", fontSize: "14px" }}>
-            ⏳ Uploading...
-          </div>
-        )}
-
-        {message && (
-          <div style={{
-            padding: "12px 16px", border: "1px solid #c9a84c33",
-            color: "#c9a84c", fontSize: "13px", marginBottom: "32px"
-          }}>
-            {message}
-          </div>
-        )}
-
-        {/* Images Grid */}
-        <div style={{ fontSize: "9px", color: "#4a3f30", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "16px" }}>
-          {images.length} image(s) in {CATEGORIES.find(c => c.id === category)?.label}
-        </div>
-
-        {loading ? (
-          <div style={{ color: "#4a3f30", fontSize: "13px" }}>Loading images...</div>
-        ) : images.length === 0 ? (
-          <div style={{ color: "#4a3f30", fontSize: "13px" }}>No images uploaded yet for this category.</div>
-        ) : (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-            gap: "16px"
-          }}>
-            {images.map(img => (
-              <div key={img.name} style={{ position: "relative", background: "#0d0d0d", border: "1px solid #c9a84c22" }}>
-                <img
-                  src={getImageUrl(img.name)}
-                  alt={img.name}
-                  style={{ width: "100%", height: "160px", objectFit: "cover", display: "block" }}
-                />
-                <div style={{ padding: "8px" }}>
-                  <div style={{ fontSize: "10px", color: "#4a3f30", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {img.name}
-                  </div>
-                  {deleteConfirm === img.name ? (
-                    <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
-                      <button
-                        onClick={() => handleDelete(img.name)}
-                        style={{
-                          flex: 1, padding: "6px", background: "#ff4444",
-                          border: "none", color: "white", fontSize: "10px",
-                          cursor: "pointer", fontFamily: "'Jost', sans-serif"
-                        }}
-                      >
-                        Confirm Delete
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(null)}
-                        style={{
-                          flex: 1, padding: "6px", background: "transparent",
-                          border: "1px solid #c9a84c33", color: "#4a3f30",
-                          fontSize: "10px", cursor: "pointer",
-                          fontFamily: "'Jost', sans-serif"
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteConfirm(img.name)}
-                      style={{
-                        width: "100%", marginTop: "8px", padding: "6px",
-                        background: "transparent", border: "1px solid #ff444433",
-                        color: "#ff6666", fontSize: "10px",
-                        cursor: "pointer", fontFamily: "'Jost', sans-serif"
-                      }}
-                    >
-                      🗑 Delete
-                    </button>
-                  )}
-                </div>
+            <div style={{ marginBottom: "32px" }}>
+              <div style={{ fontSize: "9px", color: "#4a3f30", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "12px" }}>
+                Select Category
               </div>
-            ))}
-          </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCategory(cat.id)}
+                    style={{
+                      padding: "10px 20px",
+                      background: category === cat.id ? "#c9a84c11" : "#0d0d0d",
+                      border: `1px solid ${category === cat.id ? "#c9a84c" : "#c9a84c22"}`,
+                      color: category === cat.id ? "#c9a84c" : "#4a3f30",
+                      fontSize: "12px", cursor: "pointer",
+                      fontFamily: "'Jost', sans-serif",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {cat.icon} {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div
+              style={{
+                border: "2px dashed #c9a84c33",
+                padding: "48px", textAlign: "center",
+                marginBottom: "32px", background: "#0d0d0d",
+                cursor: "pointer"
+              }}
+              onClick={() => document.getElementById("fileInput")?.click()}
+            >
+              <div style={{ fontSize: "48px", marginBottom: "16px" }}>📤</div>
+              <div style={{ fontSize: "16px", color: "#c9a84c", marginBottom: "8px" }}>
+                Click to upload images
+              </div>
+              <div style={{ fontSize: "12px", color: "#4a3f30" }}>
+                Supports JPG, JPEG, PNG, WEBP — Multiple files allowed
+              </div>
+              <input
+                id="fileInput"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleUpload}
+                style={{ display: "none" }}
+              />
+            </div>
+
+            {uploading && (
+              <div style={{ textAlign: "center", color: "#c9a84c", marginBottom: "24px", fontSize: "14px" }}>
+                ⏳ Uploading...
+              </div>
+            )}
+
+            {message && (
+              <div style={{
+                padding: "12px 16px", border: "1px solid #c9a84c33",
+                color: "#c9a84c", fontSize: "13px", marginBottom: "32px"
+              }}>
+                {message}
+              </div>
+            )}
+
+            <div style={{ fontSize: "9px", color: "#4a3f30", letterSpacing: "3px", textTransform: "uppercase", marginBottom: "16px" }}>
+              {images.length} image(s) in {CATEGORIES.find(c => c.id === category)?.label}
+            </div>
+
+            {loading ? (
+              <div style={{ color: "#4a3f30", fontSize: "13px" }}>Loading images...</div>
+            ) : images.length === 0 ? (
+              <div style={{ color: "#4a3f30", fontSize: "13px" }}>No images uploaded yet for this category.</div>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                gap: "16px"
+              }}>
+                {images.map(img => (
+                  <div key={img.name} style={{ position: "relative", background: "#0d0d0d", border: "1px solid #c9a84c22" }}>
+                    <img
+                      src={getImageUrl(img.name)}
+                      alt={img.name}
+                      style={{ width: "100%", height: "160px", objectFit: "cover", display: "block" }}
+                    />
+                    <div style={{ padding: "8px" }}>
+                      <div style={{ fontSize: "10px", color: "#4a3f30", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {img.name}
+                      </div>
+                      {deleteConfirm === img.name ? (
+                        <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
+                          <button
+                            onClick={() => handleDelete(img.name)}
+                            style={{
+                              flex: 1, padding: "6px", background: "#ff4444",
+                              border: "none", color: "white", fontSize: "10px",
+                              cursor: "pointer", fontFamily: "'Jost', sans-serif"
+                            }}
+                          >
+                            Confirm Delete
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(null)}
+                            style={{
+                              flex: 1, padding: "6px", background: "transparent",
+                              border: "1px solid #c9a84c33", color: "#4a3f30",
+                              fontSize: "10px", cursor: "pointer",
+                              fontFamily: "'Jost', sans-serif"
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteConfirm(img.name)}
+                          style={{
+                            width: "100%", marginTop: "8px", padding: "6px",
+                            background: "transparent", border: "1px solid #ff444433",
+                            color: "#ff6666", fontSize: "10px",
+                            cursor: "pointer", fontFamily: "'Jost', sans-serif"
+                          }}
+                        >
+                          🗑 Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* BOOKINGS TAB */}
+        {activeTab === "bookings" && (
+          <>
+            <p style={{ fontSize: "10px", letterSpacing: "5px", color: "#c9a84c", textTransform: "uppercase", marginBottom: "8px" }}>
+              Manage
+            </p>
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "36px", fontWeight: 300, marginBottom: "48px"
+            }}>
+              Customer Bookings
+            </h1>
+            <BookingsList />
+          </>
         )}
       </div>
     </div>
