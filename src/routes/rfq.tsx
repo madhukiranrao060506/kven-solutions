@@ -1,9 +1,8 @@
-'use client'
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { SiteShell } from "@/components/site/SiteShell";
-import { Reveal, Eyebrow } from "@/components/site/Reveal";
+import { Eyebrow } from "@/components/site/Reveal";
 import { ArrowRight, ArrowLeft, Check } from "lucide-react";
 import emailjs from "@emailjs/browser";
 
@@ -73,10 +72,8 @@ function RFQPage() {
         message: form.message || "No additional message",
       };
 
-      // Send to Kven Solutions
       await emailjs.send("KVEN_SOLUTIONS", "template_zcoum9r", templateParams);
 
-      // Send confirmation to customer
       if (form.email) {
         await emailjs.send("KVEN_SOLUTIONS", "template_5hrfits", {
           ...templateParams,
@@ -86,7 +83,6 @@ function RFQPage() {
         });
       }
 
-      // Save to Supabase
       await supabase.from("APPOINTMENTS").insert({
         name: form.name,
         phone: form.phone,
@@ -126,7 +122,11 @@ function RFQPage() {
               Our team will contact you at <strong>{form.phone}</strong> within one business day.
             </p>
             <button
-              onClick={() => { setSubmitted(false); setStep(0); setForm({ service: "", spaceType: "", area: "", style: "", readyBy: "", budget: "", timeline: "", name: "", email: "", phone: "", message: "" }); }}
+              onClick={() => {
+                setSubmitted(false);
+                setStep(0);
+                setForm({ service: "", spaceType: "", area: "", style: "", readyBy: "", budget: "", timeline: "", name: "", email: "", phone: "", message: "" });
+              }}
               className="mt-8 inline-flex items-center gap-2 text-sm text-primary hover:gap-3 transition-all"
             >
               Submit another request <ArrowRight className="w-4 h-4" />
@@ -138,21 +138,18 @@ function RFQPage() {
   }
 
   const steps = [
-    // Step 0: Service
     <div key="service" className="space-y-4">
-      <Reveal>
+      <div>
         <Eyebrow>Step 1 of 4</Eyebrow>
         <h2 className="font-display text-3xl sm:text-4xl mt-4">What can we help with?</h2>
-      </Reveal>
+      </div>
       <div className="grid sm:grid-cols-2 gap-3 mt-8">
         {SERVICES.map((s) => (
           <button
             key={s.id}
             onClick={() => { set("service", s.id); setStep(1); }}
             className={`text-left p-5 rounded-sm border transition-all ${
-              form.service === s.id
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50"
+              form.service === s.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
             }`}
           >
             <div className="font-display text-lg">{s.label}</div>
@@ -162,12 +159,11 @@ function RFQPage() {
       </div>
     </div>,
 
-    // Step 1: Project details
     <div key="details" className="space-y-6">
-      <Reveal>
+      <div>
         <Eyebrow>Step 2 of 4</Eyebrow>
         <h2 className="font-display text-3xl sm:text-4xl mt-4">Tell us about the project.</h2>
-      </Reveal>
+      </div>
       <div className="space-y-4 mt-8">
         <div>
           <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Space / Project type</label>
@@ -218,26 +214,20 @@ function RFQPage() {
       </div>
     </div>,
 
-    // Step 2: Budget & Timeline
     <div key="budget" className="space-y-6">
-      <Reveal>
+      <div>
         <Eyebrow>Step 3 of 4</Eyebrow>
         <h2 className="font-display text-3xl sm:text-4xl mt-4">Scope & budget.</h2>
-      </Reveal>
+      </div>
       <div className="space-y-6 mt-8">
         <div>
           <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-3">Budget range</label>
           <div className="flex flex-wrap gap-2">
             {BUDGETS.map(b => (
-              <button
-                key={b}
-                onClick={() => set("budget", b)}
+              <button key={b} onClick={() => set("budget", b)}
                 className={`px-4 py-2 text-sm rounded-sm border transition-all ${
                   form.budget === b ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"
-                }`}
-              >
-                {b}
-              </button>
+                }`}>{b}</button>
             ))}
           </div>
         </div>
@@ -245,15 +235,10 @@ function RFQPage() {
           <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-3">Delivery timeline</label>
           <div className="flex flex-wrap gap-2">
             {TIMELINES.map(t => (
-              <button
-                key={t}
-                onClick={() => set("timeline", t)}
+              <button key={t} onClick={() => set("timeline", t)}
                 className={`px-4 py-2 text-sm rounded-sm border transition-all ${
                   form.timeline === t ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"
-                }`}
-              >
-                {t}
-              </button>
+                }`}>{t}</button>
             ))}
           </div>
         </div>
@@ -268,13 +253,11 @@ function RFQPage() {
       </div>
     </div>,
 
-    // Step 3: Contact
     <div key="contact" className="space-y-6">
-      <Reveal>
+      <div>
         <Eyebrow>Step 4 of 4</Eyebrow>
         <h2 className="font-display text-3xl sm:text-4xl mt-4">Your contact details.</h2>
-      </Reveal>
-
+      </div>
       <div className="bg-secondary/30 rounded-sm p-4 text-sm space-y-2 mt-6">
         <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">Review</div>
         {[
@@ -292,65 +275,40 @@ function RFQPage() {
           </div>
         ))}
       </div>
-
       <div className="space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Full Name *</label>
-            <input
-              value={form.name}
-              onChange={e => set("name", e.target.value)}
-              placeholder="Your name"
-              className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
-            />
+            <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Your name"
+              className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
           </div>
           <div>
             <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Phone *</label>
-            <input
-              value={form.phone}
-              onChange={e => set("phone", e.target.value)}
-              placeholder="+91 XXXXX XXXXX"
-              className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
-            />
+            <input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+91 XXXXX XXXXX"
+              className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
           </div>
         </div>
         <div>
           <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Email *</label>
-          <input
-            value={form.email}
-            onChange={e => set("email", e.target.value)}
-            placeholder="your@email.com"
-            type="email"
-            className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
-          />
+          <input value={form.email} onChange={e => set("email", e.target.value)} placeholder="your@email.com" type="email"
+            className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
         </div>
         <div>
           <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Additional message</label>
-          <textarea
-            value={form.message}
-            onChange={e => set("message", e.target.value)}
-            placeholder="Anything else you'd like us to know..."
-            rows={3}
-            className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors resize-none"
-          />
+          <textarea value={form.message} onChange={e => set("message", e.target.value)}
+            placeholder="Anything else you'd like us to know..." rows={3}
+            className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors resize-none" />
         </div>
       </div>
-
       {error && (
-        <div className="text-sm text-destructive border border-destructive/30 rounded-sm px-4 py-3">
-          {error}
-        </div>
+        <div className="text-sm text-destructive border border-destructive/30 rounded-sm px-4 py-3">{error}</div>
       )}
-
       <div className="flex justify-between pt-4">
         <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button
-          onClick={handleSubmit}
-          disabled={sending}
-          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 text-sm rounded-sm hover:bg-gold-soft transition-colors disabled:opacity-60"
-        >
+        <button onClick={handleSubmit} disabled={sending}
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 text-sm rounded-sm hover:bg-gold-soft transition-colors disabled:opacity-60">
           {sending ? "Sending..." : "Submit RFQ"} {!sending && <Check className="w-4 h-4" />}
         </button>
       </div>
@@ -363,10 +321,7 @@ function RFQPage() {
         <div className="mx-auto max-w-2xl">
           <div className="flex gap-1 mb-12">
             {[0,1,2,3].map(i => (
-              <div
-                key={i}
-                className={`h-0.5 flex-1 transition-all duration-500 ${i <= step ? "bg-primary" : "bg-border"}`}
-              />
+              <div key={i} className={`h-0.5 flex-1 transition-all duration-500 ${i <= step ? "bg-primary" : "bg-border"}`} />
             ))}
           </div>
           {steps[step]}
