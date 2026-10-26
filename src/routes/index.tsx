@@ -47,7 +47,7 @@ function Hero() {
     const fetchHeroImages = async () => {
       const { data, error } = await supabase.storage
         .from("works-images")
-        .list("hero", { sortBy: { column: "created_at", order: "asc" } });
+        .list("hero", { limit: 5, sortBy: { column: "created_at", order: "asc" } });
 
       if (!error && data && data.length > 0) {
         const supabaseFrames = data.map((file) => {
@@ -63,7 +63,7 @@ function Hero() {
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => setActive((i) => (i + 1) % frames.length), 5500);
+    const t = setInterval(() => setActive((i) => (i + 1) % frames.length), 8000);
     return () => clearInterval(t);
   }, [frames]);
 
