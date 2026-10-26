@@ -39,7 +39,6 @@ export function Header() {
   const mobileLinks = [
     { to: "/", label: "Home" },
     { to: "/portfolio", label: "Portfolio" },
-    { to: "/supplies", label: "Supplies" },
     { to: "/about", label: "About" },
     { to: "/contact", label: "Contact" },
     { to: "/login", label: "Client portal" },
@@ -118,7 +117,6 @@ export function Header() {
               </div>
 
               <NavLink to="/portfolio">Portfolio</NavLink>
-              <NavLink to="/supplies">Supplies</NavLink>
               <NavLink to="/about">About</NavLink>
               <NavLink to="/contact">Contact</NavLink>
             </nav>
@@ -157,68 +155,25 @@ export function Header() {
             >
               <div className="px-6 py-6 flex flex-col gap-1">
                 {mobileLinks.slice(0, 1).map((l, i) => (
-                  <motion.div
-                    key={l.to}
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05, duration: 0.3 }}
-                  >
-                    <Link to={l.to} onClick={() => setMobileOpen(false)} className="py-2 text-sm block transition-colors duration-300 hover:text-primary">
-                      {l.label}
-                    </Link>
+                  <motion.div key={l.to} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05, duration: 0.3 }}>
+                    <Link to={l.to} onClick={() => setMobileOpen(false)} className="py-2 text-sm block transition-colors duration-300 hover:text-primary">{l.label}</Link>
                   </motion.div>
                 ))}
-
-                <motion.div
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1, duration: 0.3 }}
-                  className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-3 mb-1"
-                >
-                  Services
-                </motion.div>
+                <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1, duration: 0.3 }} className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-3 mb-1">Services</motion.div>
                 {VERTICALS.map((v, i) => (
-                  <motion.div
-                    key={v.id}
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.15 + i * 0.05, duration: 0.3 }}
-                  >
+                  <motion.div key={v.id} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.05, duration: 0.3 }}>
                     <Link to="/services/$vertical" params={{ vertical: v.slug }} onClick={() => setMobileOpen(false)} className="py-2 text-sm flex items-center gap-2 transition-colors duration-300 hover:text-primary">
                       <v.icon className="w-4 h-4 text-primary" /> {v.title}
                     </Link>
                   </motion.div>
                 ))}
-
                 {mobileLinks.slice(1).map((l, i) => (
-                  <motion.div
-                    key={l.to}
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.35 + i * 0.05, duration: 0.3 }}
-                  >
-                    <Link
-                      to={l.to}
-                      onClick={() => setMobileOpen(false)}
-                      className={cn("py-2 text-sm block transition-colors duration-300 hover:text-primary", i === 0 && "mt-2")}
-                    >
-                      {l.label}
-                    </Link>
+                  <motion.div key={l.to} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 + i * 0.05, duration: 0.3 }}>
+                    <Link to={l.to} onClick={() => setMobileOpen(false)} className={cn("py-2 text-sm block transition-colors duration-300 hover:text-primary", i === 0 && "mt-2")}>{l.label}</Link>
                   </motion.div>
                 ))}
-
-                <motion.div
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.6, duration: 0.3 }}
-                >
-                  <Link
-                    to="/rfq"
-                    onClick={() => setMobileOpen(false)}
-                    className="mt-3 inline-flex items-center justify-center bg-primary text-primary-foreground px-5 py-3 text-sm font-medium rounded-sm w-full transition-transform duration-300 hover:scale-[1.02]"
-                  >
-                    Get in Touch
-                  </Link>
+                <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6, duration: 0.3 }}>
+                  <Link to="/rfq" onClick={() => setMobileOpen(false)} className="mt-3 inline-flex items-center justify-center bg-primary text-primary-foreground px-5 py-3 text-sm font-medium rounded-sm w-full transition-transform duration-300 hover:scale-[1.02]">Get in Touch</Link>
                 </motion.div>
               </div>
             </motion.div>
