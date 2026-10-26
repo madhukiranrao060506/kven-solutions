@@ -317,7 +317,7 @@ function RFQPage() {
 
   return (
     <SiteShell>
-      <section className="relative min-h-screen py-32 px-6 lg:px-10">
+      <section className="relative min-h-screen py-32 px-6 lg:px-10 pointer-events-auto z-10">
         <div className="mx-auto max-w-2xl">
           <div className="flex gap-1 mb-12">
             {[0,1,2,3].map(i => (
@@ -329,4 +329,4 @@ function RFQPage() {
       </section>
     </SiteShell>
   );
-}
+} 
