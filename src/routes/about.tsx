@@ -7,7 +7,7 @@ export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
       { title: "About — Kven Solutions" },
-      { name: "description", content: "Founded in 2008, Kven Solutions is a multi-disciplinary firm of engineers, designers, and producers." },
+      { name: "description", content: "Founded in 2021, Kven Solutions is a multi-disciplinary firm of engineers, designers, and producers." },
       { property: "og:title", content: "About — Kven Solutions" },
       { property: "og:description", content: "A studio of engineers, designers, and producers." },
     ],
