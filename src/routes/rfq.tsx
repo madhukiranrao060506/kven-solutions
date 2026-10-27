@@ -21,7 +21,18 @@ const SERVICES = [
 const BUDGETS   = ["Below ₹1 Lakh", "₹1 – ₹3 Lakhs", "₹3 – ₹5 Lakhs", "₹5 – ₹10 Lakhs", "Above ₹10 Lakhs"];
 const TIMELINES = ["< 1 month", "1–3 months", "3–6 months", "6–12 months", "> 1 year"];
 
-const INPUT_CLS = "w-full bg-[#1e1e1e] border border-[#333] rounded px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-[#C5A059] focus:outline-none";
+const INPUT_STYLE: React.CSSProperties = {
+  width: "100%",
+  background: "#1e1e1e",
+  border: "1px solid #444",
+  borderRadius: 4,
+  padding: "12px 16px",
+  fontSize: 14,
+  color: "#ffffff",
+  outline: "none",
+  boxSizing: "border-box",
+  fontFamily: "Inter, sans-serif",
+};
 
 function RFQPage() {
   const [step,      setStep]      = useState(0);
@@ -154,21 +165,21 @@ function RFQPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div>
                     <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Space / Project Type</label>
-                    <input ref={spaceTypeRef} type="text" placeholder="e.g. Villa, Office, Warehouse..." className={INPUT_CLS} />
+                    <input ref={spaceTypeRef} type="text" placeholder="e.g. Villa, Office, Warehouse..." style={INPUT_STYLE} />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     <div>
                       <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Area (sqft / sqm)</label>
-                      <input ref={areaRef} type="text" placeholder="e.g. 2000 sqft" className={INPUT_CLS} />
+                      <input ref={areaRef} type="text" placeholder="e.g. 2000 sqft" style={INPUT_STYLE} />
                     </div>
                     <div>
                       <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Style Preference</label>
-                      <input ref={styleRef} type="text" placeholder="e.g. Modern, Traditional..." className={INPUT_CLS} />
+                      <input ref={styleRef} type="text" placeholder="e.g. Modern, Traditional..." style={INPUT_STYLE} />
                     </div>
                   </div>
                   <div>
                     <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Ready to Start By</label>
-                    <input ref={readyByRef} type="text" placeholder="e.g. 3 months, January 2025..." className={INPUT_CLS} />
+                    <input ref={readyByRef} type="text" placeholder="e.g. 3 months, January 2025..." style={INPUT_STYLE} />
                   </div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 32 }}>
@@ -239,21 +250,21 @@ function RFQPage() {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     <div>
                       <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Full Name *</label>
-                      <input ref={nameRef} type="text" placeholder="Your name" className={INPUT_CLS} />
+                      <input ref={nameRef} type="text" placeholder="Your name" style={INPUT_STYLE} />
                     </div>
                     <div>
                       <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Phone *</label>
-                      <input ref={phoneRef} type="tel" placeholder="+91 XXXXX XXXXX" className={INPUT_CLS} />
+                      <input ref={phoneRef} type="tel" placeholder="+91 XXXXX XXXXX" style={INPUT_STYLE} />
                     </div>
                   </div>
                   <div>
                     <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Email *</label>
-                    <input ref={emailRef} type="email" placeholder="your@email.com" className={INPUT_CLS} />
+                    <input ref={emailRef} type="email" placeholder="your@email.com" style={INPUT_STYLE} />
                   </div>
                   <div>
                     <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Additional Message</label>
                     <textarea ref={messageRef} placeholder="Anything else you'd like us to know..." rows={3}
-                      className={INPUT_CLS} style={{ resize: "none" }} />
+                      style={{ ...INPUT_STYLE, resize: "none" }} />
                   </div>
                 </div>
                 {error && (
