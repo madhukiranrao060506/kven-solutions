@@ -29,6 +29,8 @@ const INPUT_STYLE: React.CSSProperties = {
   padding: "12px 16px",
   fontSize: 14,
   color: "#ffffff",
+  WebkitTextFillColor: "#ffffff",
+  WebkitBoxShadow: "0 0 0 30px #1e1e1e inset",
   outline: "none",
   boxSizing: "border-box",
   fontFamily: "Inter, sans-serif",
