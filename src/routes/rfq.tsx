@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { ArrowRight, ArrowLeft, Check } from "lucide-react";
@@ -9,56 +9,76 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFseHZha2dhb3NycG51ZG14ZXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NjIxNDUsImV4cCI6MjEwODMzODE0NX0.y4wMaVGjL9iaH_llYGE0Q4pcutpFM7AYaTFWWecgc18"
 );
 
-export const Route = createFileRoute("/rfq")({
-  component: RFQPage,
-});
+export const Route = createFileRoute("/rfq")({ component: RFQPage });
 
 const SERVICES = [
-  { id: "civil", label: "Civil Works", desc: "Structural engineering & construction" },
-  { id: "interior", label: "Interior Design", desc: "Bespoke residential & commercial interiors" },
-  { id: "events", label: "Event Management", desc: "Corporate & cultural event production" },
+  { id: "civil",    label: "Civil Works",          desc: "Structural engineering & construction" },
+  { id: "interior", label: "Interior Design",      desc: "Bespoke residential & commercial interiors" },
+  { id: "events",   label: "Event Management",     desc: "Corporate & cultural event production" },
   { id: "supplies", label: "Contracts & Supplies", desc: "Material procurement & logistics" },
 ];
 
-const BUDGETS = ["Below ₹1 Lakh", "₹1 – ₹3 Lakhs", "₹3 – ₹5 Lakhs", "₹5 – ₹10 Lakhs", "Above ₹10 Lakhs"];
+const BUDGETS   = ["Below ₹1 Lakh", "₹1 – ₹3 Lakhs", "₹3 – ₹5 Lakhs", "₹5 – ₹10 Lakhs", "Above ₹10 Lakhs"];
 const TIMELINES = ["< 1 month", "1–3 months", "3–6 months", "6–12 months", "> 1 year"];
 
-function RFQPage() {
-  const [step, setStep] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    service: "", spaceType: "", area: "", style: "",
-    readyBy: "", budget: "", timeline: "",
-    name: "", email: "", phone: "", message: "",
-  });
+const INPUT_CLS = "w-full bg-[#1e1e1e] border border-[#333] rounded px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-[#C5A059] focus:outline-none";
 
-  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+function RFQPage() {
+  const [step,      setStep]      = useState(0);
+  const [service,   setService]   = useState("");
+  const [budget,    setBudget]    = useState("");
+  const [timeline,  setTimeline]  = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [sending,   setSending]   = useState(false);
+  const [error,     setError]     = useState("");
+  const [submittedName,  setSubmittedName]  = useState("");
+  const [submittedEmail, setSubmittedEmail] = useState("");
+  const [submittedPhone, setSubmittedPhone] = useState("");
+
+  const spaceTypeRef = useRef<HTMLInputElement>(null);
+  const areaRef      = useRef<HTMLInputElement>(null);
+  const styleRef     = useRef<HTMLInputElement>(null);
+  const readyByRef   = useRef<HTMLInputElement>(null);
+  const nameRef      = useRef<HTMLInputElement>(null);
+  const emailRef     = useRef<HTMLInputElement>(null);
+  const phoneRef     = useRef<HTMLInputElement>(null);
+  const messageRef   = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = async () => {
-    if (!form.name || !form.email || !form.phone) {
+    const name  = nameRef.current?.value?.trim()  || "";
+    const email = emailRef.current?.value?.trim() || "";
+    const phone = phoneRef.current?.value?.trim() || "";
+    if (!name || !email || !phone) {
       setError("Please fill in your name, email and phone.");
       return;
     }
     setSending(true);
     setError("");
+    const serviceLabel = SERVICES.find(s => s.id === service)?.label || service;
+    const spaceType = spaceTypeRef.current?.value || "";
+    const area      = areaRef.current?.value      || "";
+    const style     = styleRef.current?.value     || "";
+    const readyBy   = readyByRef.current?.value   || "";
+    const message   = messageRef.current?.value   || "";
     try {
       await emailjs.init("buC7d6SAzfFH4RSpL");
       const p = {
-        client_name: form.name, client_phone: form.phone, client_email: form.email,
-        service: SERVICES.find(s => s.id === form.service)?.label || form.service,
-        space_type: form.spaceType, area: form.area, style: form.style,
-        ready_by: form.readyBy, budget: form.budget, timeline: form.timeline,
-        message: form.message || "No additional message",
+        client_name: name, client_phone: phone, client_email: email,
+        service: serviceLabel, space_type: spaceType, area, style,
+        ready_by: readyBy, budget, timeline,
+        message: message || "No additional message",
       };
       await emailjs.send("KVEN_SOLUTIONS", "template_zcoum9r", p);
-      await emailjs.send("KVEN_SOLUTIONS", "template_5hrfits", { ...p, time_slot: "To be confirmed", date: "To be confirmed", location: "Not specified" });
-      await supabase.from("APPOINTMENTS").insert({
-        name: form.name, phone: form.phone, email: form.email,
-        service: p.service, space_type: form.spaceType, area: form.area,
-        style: form.style, budget: form.budget, timeline: form.timeline, message: form.message || "",
+      await emailjs.send("KVEN_SOLUTIONS", "template_5hrfits", {
+        ...p, time_slot: "To be confirmed", date: "To be confirmed", location: "Not specified",
       });
+      await supabase.from("APPOINTMENTS").insert({
+        name, phone, email, service: serviceLabel,
+        space_type: spaceType, area, style, budget, timeline, message,
+      });
+      setSubmittedName(name);
+      setSubmittedEmail(email);
+      setSubmittedPhone(phone);
       setSubmitted(true);
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -68,54 +88,59 @@ function RFQPage() {
     }
   };
 
+  const resetForm = () => {
+    setService(""); setBudget(""); setTimeline("");
+    setSubmitted(false); setSending(false); setError(""); setStep(0);
+    setSubmittedName(""); setSubmittedEmail(""); setSubmittedPhone("");
+    [spaceTypeRef, areaRef, styleRef, readyByRef, nameRef, emailRef, phoneRef].forEach(r => { if (r.current) r.current.value = ""; });
+    if (messageRef.current) messageRef.current.value = "";
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-sm border-b border-border">
-        <div className="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
-          <a href="/" className="font-display text-lg tracking-wide">Kven Solutions</a>
-          <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Back to Home</a>
+    <div style={{ minHeight: "100vh", background: "#111", color: "#f0f0f0", fontFamily: "Inter, sans-serif" }}>
+      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50, background: "rgba(17,17,17,0.9)", borderBottom: "1px solid #2a2a2a", backdropFilter: "blur(8px)" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <a href="/" style={{ fontFamily: "Playfair Display, serif", fontSize: 18, color: "#f0f0f0", textDecoration: "none" }}>Kven Solutions</a>
+          <a href="/" style={{ fontSize: 14, color: "#999", textDecoration: "none" }}>← Back to Home</a>
         </div>
       </nav>
 
       {submitted ? (
-        <div className="min-h-screen flex items-center justify-center px-6">
-          <div className="text-center max-w-lg">
-            <div className="mx-auto mb-8 h-16 w-16 rounded-full bg-primary/10 grid place-items-center">
-              <Check className="w-8 h-8 text-primary" />
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 24px" }}>
+          <div style={{ textAlign: "center", maxWidth: 480 }}>
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(197,160,89,0.15)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 32px" }}>
+              <Check size={28} color="#C5A059" />
             </div>
-            <p className="text-xs uppercase tracking-[0.3em] text-primary">Submitted</p>
-            <h1 className="font-display text-4xl sm:text-5xl mt-4">Thank you, {form.name}.</h1>
-            <p className="text-muted-foreground mt-6 leading-relaxed">
-              Your request has been received. A confirmation has been sent to <strong>{form.email}</strong>.
-              Our team will contact you at <strong>{form.phone}</strong> within one business day.
+            <p style={{ fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: "#C5A059" }}>Submitted</p>
+            <h1 style={{ fontFamily: "Playfair Display, serif", fontSize: 42, marginTop: 16 }}>Thank you, {submittedName}.</h1>
+            <p style={{ color: "#999", marginTop: 20, lineHeight: 1.7 }}>
+              Your request has been received. A confirmation has been sent to <strong style={{ color: "#f0f0f0" }}>{submittedEmail}</strong>.
+              Our team will contact you at <strong style={{ color: "#f0f0f0" }}>{submittedPhone}</strong> within one business day.
             </p>
-            <button
-              onClick={() => { setSubmitted(false); setStep(0); setForm({ service: "", spaceType: "", area: "", style: "", readyBy: "", budget: "", timeline: "", name: "", email: "", phone: "", message: "" }); }}
-              className="mt-8 inline-flex items-center gap-2 text-sm text-primary hover:gap-3 transition-all"
-            >
-              Submit another request <ArrowRight className="w-4 h-4" />
+            <button onClick={resetForm} style={{ marginTop: 32, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, color: "#C5A059", background: "none", border: "none", cursor: "pointer" }}>
+              Submit another request <ArrowRight size={14} />
             </button>
           </div>
         </div>
       ) : (
-        <div className="min-h-screen pt-32 pb-20 px-6 lg:px-10">
-          <div className="mx-auto max-w-2xl">
-            <div className="flex gap-1 mb-12">
+        <div style={{ minHeight: "100vh", padding: "120px 24px 80px" }}>
+          <div style={{ maxWidth: 640, margin: "0 auto" }}>
+            <div style={{ display: "flex", gap: 4, marginBottom: 48 }}>
               {[0,1,2,3].map(i => (
-                <div key={i} className={`h-0.5 flex-1 transition-all duration-500 ${i <= step ? "bg-primary" : "bg-border"}`} />
+                <div key={i} style={{ height: 2, flex: 1, background: i <= step ? "#C5A059" : "#333", transition: "background 0.4s" }} />
               ))}
             </div>
 
             {step === 0 && (
-              <div className="space-y-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-primary">Step 1 of 4</p>
-                <h2 className="font-display text-3xl sm:text-4xl mt-4">What can we help with?</h2>
-                <div className="grid sm:grid-cols-2 gap-3 mt-8">
-                  {SERVICES.map((s) => (
-                    <button key={s.id} onClick={() => { set("service", s.id); setStep(1); }}
-                      className={`text-left p-5 rounded-sm border transition-all ${form.service === s.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}>
-                      <div className="font-display text-lg">{s.label}</div>
-                      <div className="text-sm text-muted-foreground mt-1">{s.desc}</div>
+              <div>
+                <p style={{ fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: "#C5A059", marginBottom: 16 }}>Step 1 of 4</p>
+                <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: 36, marginBottom: 32 }}>What can we help with?</h2>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {SERVICES.map(s => (
+                    <button key={s.id} onClick={() => { setService(s.id); setStep(1); }}
+                      style={{ textAlign: "left", padding: 20, border: `1px solid ${service === s.id ? "#C5A059" : "#333"}`, background: service === s.id ? "rgba(197,160,89,0.05)" : "transparent", borderRadius: 4, cursor: "pointer", color: "#f0f0f0" }}>
+                      <div style={{ fontFamily: "Playfair Display, serif", fontSize: 17 }}>{s.label}</div>
+                      <div style={{ fontSize: 13, color: "#888", marginTop: 4 }}>{s.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -123,137 +148,126 @@ function RFQPage() {
             )}
 
             {step === 1 && (
-              <div className="space-y-6">
-                <p className="text-xs uppercase tracking-[0.3em] text-primary">Step 2 of 4</p>
-                <h2 className="font-display text-3xl sm:text-4xl mt-4">Tell us about the project.</h2>
-                <div className="space-y-4 mt-8">
+              <div>
+                <p style={{ fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: "#C5A059", marginBottom: 16 }}>Step 2 of 4</p>
+                <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: 36, marginBottom: 32 }}>Tell us about the project.</h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div>
-                    <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Space / Project type</label>
-                    <input value={form.spaceType} onChange={e => set("spaceType", e.target.value)}
-                      placeholder="e.g. Villa, Office, Warehouse..."
-                      className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
+                    <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Space / Project Type</label>
+                    <input ref={spaceTypeRef} type="text" placeholder="e.g. Villa, Office, Warehouse..." className={INPUT_CLS} />
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Area (sqft / sqm)</label>
-                      <input value={form.area} onChange={e => set("area", e.target.value)}
-                        placeholder="e.g. 2000 sqft"
-                        className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
+                      <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Area (sqft / sqm)</label>
+                      <input ref={areaRef} type="text" placeholder="e.g. 2000 sqft" className={INPUT_CLS} />
                     </div>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Style preference</label>
-                      <input value={form.style} onChange={e => set("style", e.target.value)}
-                        placeholder="e.g. Modern, Traditional..."
-                        className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
+                      <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Style Preference</label>
+                      <input ref={styleRef} type="text" placeholder="e.g. Modern, Traditional..." className={INPUT_CLS} />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Ready to start by</label>
-                    <input value={form.readyBy} onChange={e => set("readyBy", e.target.value)}
-                      placeholder="e.g. 3 months, January 2025..."
-                      className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
+                    <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Ready to Start By</label>
+                    <input ref={readyByRef} type="text" placeholder="e.g. 3 months, January 2025..." className={INPUT_CLS} />
                   </div>
                 </div>
-                <div className="flex justify-between pt-4">
-                  <button onClick={() => setStep(0)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Back
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 32 }}>
+                  <button onClick={() => setStep(0)} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, color: "#888", background: "none", border: "none", cursor: "pointer" }}>
+                    <ArrowLeft size={14} /> Back
                   </button>
-                  <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 text-sm rounded-sm hover:opacity-90 transition-opacity">
-                    Next <ArrowRight className="w-4 h-4" />
+                  <button onClick={() => setStep(2)} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#C5A059", color: "#111", border: "none", borderRadius: 4, padding: "10px 24px", fontSize: 14, cursor: "pointer", fontWeight: 500 }}>
+                    Next <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
             )}
 
             {step === 2 && (
-              <div className="space-y-6">
-                <p className="text-xs uppercase tracking-[0.3em] text-primary">Step 3 of 4</p>
-                <h2 className="font-display text-3xl sm:text-4xl mt-4">Scope & budget.</h2>
-                <div className="space-y-6 mt-8">
+              <div>
+                <p style={{ fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: "#C5A059", marginBottom: 16 }}>Step 3 of 4</p>
+                <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: 36, marginBottom: 32 }}>Scope & budget.</h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   <div>
-                    <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-3">Budget range</label>
-                    <div className="flex flex-wrap gap-2">
+                    <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 12 }}>Budget Range</label>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {BUDGETS.map(b => (
-                        <button key={b} onClick={() => set("budget", b)}
-                          className={`px-4 py-2 text-sm rounded-sm border transition-all ${form.budget === b ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                        <button key={b} onClick={() => setBudget(b)}
+                          style={{ padding: "8px 16px", fontSize: 13, border: `1px solid ${budget === b ? "#C5A059" : "#333"}`, background: budget === b ? "rgba(197,160,89,0.1)" : "transparent", color: budget === b ? "#f0f0f0" : "#888", borderRadius: 4, cursor: "pointer" }}>
                           {b}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-3">Delivery timeline</label>
-                    <div className="flex flex-wrap gap-2">
+                    <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 12 }}>Delivery Timeline</label>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {TIMELINES.map(t => (
-                        <button key={t} onClick={() => set("timeline", t)}
-                          className={`px-4 py-2 text-sm rounded-sm border transition-all ${form.timeline === t ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                        <button key={t} onClick={() => setTimeline(t)}
+                          style={{ padding: "8px 16px", fontSize: 13, border: `1px solid ${timeline === t ? "#C5A059" : "#333"}`, background: timeline === t ? "rgba(197,160,89,0.1)" : "transparent", color: timeline === t ? "#f0f0f0" : "#888", borderRadius: 4, cursor: "pointer" }}>
                           {t}
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-between pt-4">
-                  <button onClick={() => setStep(1)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Back
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 32 }}>
+                  <button onClick={() => setStep(1)} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, color: "#888", background: "none", border: "none", cursor: "pointer" }}>
+                    <ArrowLeft size={14} /> Back
                   </button>
-                  <button onClick={() => setStep(3)} className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 text-sm rounded-sm hover:opacity-90 transition-opacity">
-                    Next <ArrowRight className="w-4 h-4" />
+                  <button onClick={() => setStep(3)} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#C5A059", color: "#111", border: "none", borderRadius: 4, padding: "10px 24px", fontSize: 14, cursor: "pointer", fontWeight: 500 }}>
+                    Next <ArrowRight size={14} />
                   </button>
                 </div>
               </div>
             )}
 
             {step === 3 && (
-              <div className="space-y-6">
-                <p className="text-xs uppercase tracking-[0.3em] text-primary">Step 4 of 4</p>
-                <h2 className="font-display text-3xl sm:text-4xl mt-4">Your contact details.</h2>
-                <div className="bg-secondary/30 rounded-sm p-4 text-sm space-y-2 mt-6">
-                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">Review</div>
-                  {[
-                    ["Service", SERVICES.find(s => s.id === form.service)?.label],
-                    ["Space type", form.spaceType], ["Area", form.area],
-                    ["Style", form.style], ["Ready by", form.readyBy],
-                    ["Budget", form.budget], ["Timeline", form.timeline],
-                  ].filter(([, v]) => v).map(([k, v]) => (
-                    <div key={String(k)} className="flex justify-between">
-                      <span className="text-muted-foreground">{k}</span><span>{v}</span>
+              <div>
+                <p style={{ fontSize: 11, letterSpacing: "0.3em", textTransform: "uppercase", color: "#C5A059", marginBottom: 16 }}>Step 4 of 4</p>
+                <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: 36, marginBottom: 24 }}>Your contact details.</h2>
+                <div style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 4, padding: 16, marginBottom: 24, fontSize: 13 }}>
+                  <div style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", marginBottom: 12 }}>Review</div>
+                  {[["Service", SERVICES.find(s => s.id === service)?.label], ["Budget", budget], ["Timeline", timeline]]
+                    .filter(([,v]) => v).map(([k,v]) => (
+                    <div key={String(k)} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ color: "#888" }}>{k}</span>
+                      <span style={{ color: "#f0f0f0" }}>{v}</span>
                     </div>
                   ))}
                 </div>
-                <div className="space-y-4">
-                  <div className="grid sm:grid-cols-2 gap-4">
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Full Name *</label>
-                      <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Your name"
-                        className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
+                      <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Full Name *</label>
+                      <input ref={nameRef} type="text" placeholder="Your name" className={INPUT_CLS} />
                     </div>
                     <div>
-                      <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Phone *</label>
-                      <input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+91 XXXXX XXXXX"
-                        className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
+                      <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Phone *</label>
+                      <input ref={phoneRef} type="tel" placeholder="+91 XXXXX XXXXX" className={INPUT_CLS} />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Email *</label>
-                    <input value={form.email} onChange={e => set("email", e.target.value)} placeholder="your@email.com" type="email"
-                      className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors" />
+                    <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Email *</label>
+                    <input ref={emailRef} type="email" placeholder="your@email.com" className={INPUT_CLS} />
                   </div>
                   <div>
-                    <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground block mb-2">Additional message</label>
-                    <textarea value={form.message} onChange={e => set("message", e.target.value)}
-                      placeholder="Anything else you'd like us to know..." rows={3}
-                      className="w-full bg-secondary/40 border border-border rounded-sm px-4 py-3 text-sm outline-none focus:border-primary transition-colors resize-none" />
+                    <label style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "#888", display: "block", marginBottom: 8 }}>Additional Message</label>
+                    <textarea ref={messageRef} placeholder="Anything else you'd like us to know..." rows={3}
+                      className={INPUT_CLS} style={{ resize: "none" }} />
                   </div>
                 </div>
-                {error && <div className="text-sm text-destructive border border-destructive/30 rounded-sm px-4 py-3">{error}</div>}
-                <div className="flex justify-between pt-4">
-                  <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <ArrowLeft className="w-4 h-4" /> Back
+                {error && (
+                  <div style={{ marginTop: 16, padding: "12px 16px", background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)", borderRadius: 4, fontSize: 13, color: "#f87171" }}>
+                    {error}
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 32 }}>
+                  <button onClick={() => setStep(2)} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, color: "#888", background: "none", border: "none", cursor: "pointer" }}>
+                    <ArrowLeft size={14} /> Back
                   </button>
                   <button onClick={handleSubmit} disabled={sending}
-                    className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3 text-sm rounded-sm hover:opacity-90 transition-opacity disabled:opacity-60">
-                    {sending ? "Sending..." : "Submit RFQ"} {!sending && <Check className="w-4 h-4" />}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 8, background: sending ? "#888" : "#C5A059", color: "#111", border: "none", borderRadius: 4, padding: "12px 32px", fontSize: 14, cursor: sending ? "not-allowed" : "pointer", fontWeight: 500 }}>
+                    {sending ? "Sending…" : <><Check size={14} /> Submit RFQ</>}
                   </button>
                 </div>
               </div>
