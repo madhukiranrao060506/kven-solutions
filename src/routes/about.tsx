@@ -38,7 +38,7 @@ function AboutPage() {
           </Reveal>
           <Reveal delay={0.1} className="lg:col-span-5 flex flex-col justify-center">
             <p className="text-lg leading-relaxed">
-              Founded in 2008, Kven Solutions is a multi-disciplinary firm built around a single conviction: that the boundary between structure and experience is artificial.
+              Founded in 2021, Kven Solutions is a multi-disciplinary firm built around a single conviction: that the boundary between structure and experience is artificial.
             </p>
             <p className="text-muted-foreground leading-relaxed mt-6">
               We deliver civil works, interiors, events, and supplies under one operational system — so a single client engagement can move from blueprint to opening night without changing partners.
