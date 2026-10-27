@@ -1,4 +1,4 @@
- @import "tailwindcss" source(none);
+@import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
 
@@ -60,14 +60,19 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* Default = dark luxury theme */
 :root {
   --radius: 0.5rem;
+
+  /* Brand */
   --charcoal: oklch(0.18 0.005 60);
   --graphite: oklch(0.24 0.006 60);
   --ivory: oklch(0.97 0.005 80);
   --gold: oklch(0.74 0.09 80);
   --gold-soft: oklch(0.82 0.07 82);
   --gold-deep: oklch(0.55 0.08 70);
+
+  /* Semantic — dark first */
   --background: oklch(0.14 0.004 60);
   --foreground: oklch(0.96 0.005 80);
   --card: oklch(0.18 0.005 60);
@@ -87,11 +92,13 @@
   --border: oklch(0.32 0.008 70 / 0.5);
   --input: oklch(0.3 0.008 70 / 0.6);
   --ring: oklch(0.74 0.09 80 / 0.5);
+
   --chart-1: oklch(0.74 0.09 80);
   --chart-2: oklch(0.55 0.08 70);
   --chart-3: oklch(0.4 0.02 60);
   --chart-4: oklch(0.82 0.07 82);
   --chart-5: oklch(0.6 0.05 70);
+
   --sidebar: oklch(0.16 0.005 60);
   --sidebar-foreground: oklch(0.96 0.005 80);
   --sidebar-primary: oklch(0.74 0.09 80);
@@ -100,10 +107,12 @@
   --sidebar-accent-foreground: oklch(0.96 0.005 80);
   --sidebar-border: oklch(0.32 0.008 70 / 0.5);
   --sidebar-ring: oklch(0.74 0.09 80 / 0.5);
+
   --gradient-gold: linear-gradient(135deg, oklch(0.82 0.07 82), oklch(0.55 0.08 70));
   --gradient-charcoal: linear-gradient(180deg, oklch(0.16 0.005 60), oklch(0.1 0.003 60));
   --shadow-luxury: 0 30px 80px -30px oklch(0 0 0 / 0.6), 0 8px 24px -12px oklch(0.74 0.09 80 / 0.15);
   --shadow-gold: 0 12px 40px -12px oklch(0.74 0.09 80 / 0.4);
+
   color-scheme: dark;
 }
 
@@ -141,16 +150,15 @@
   }
   ::selection { background: oklch(0.74 0.09 80 / 0.4); color: var(--color-foreground); }
   input, textarea, select {
-    color: var(--color-foreground);
-    -webkit-text-fill-color: var(--color-foreground);
-    caret-color: var(--color-foreground);
+    color: #f0f0f0;
+    -webkit-text-fill-color: #f0f0f0;
+    caret-color: #f0f0f0;
   }
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus,
   textarea:-webkit-autofill {
     -webkit-box-shadow: 0 0 0 30px #1e1e1e inset !important;
-    -webkit-text-fill-color: var(--color-foreground) !important;
+    -webkit-text-fill-color: #f0f0f0 !important;
   }
 }
 
@@ -198,4 +206,4 @@
     0%, 100% { transform: translateY(0); opacity: 0.4; }
     50% { transform: translateY(8px); opacity: 1; }
   }
-} 
+}
