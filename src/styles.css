@@ -153,6 +153,9 @@
     color: #f0f0f0;
     -webkit-text-fill-color: #f0f0f0;
     caret-color: #f0f0f0;
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
   }
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
