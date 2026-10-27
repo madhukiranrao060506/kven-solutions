@@ -166,12 +166,14 @@ function PortalPage() {
             onChange={e => setPassword(e.target.value)}
             onKeyDown={e => e.key === "Enter" && password === ADMIN_PASSWORD && setLoggedIn(true)}
             style={{
-              width: "100%", background: "#111",
-              border: "1px solid #c9a84c33", color: "#f0e6c8",
-              padding: "14px 16px", fontSize: "13px",
-              outline: "none", marginBottom: "16px",
-              fontFamily: "'Jost', sans-serif", boxSizing: "border-box"
-            }}
+  width: "100%", background: "#111",
+  border: "1px solid #c9a84c33", color: "#f0e6c8",
+  WebkitTextFillColor: "#f0e6c8", caretColor: "#f0e6c8",
+  
+  padding: "14px 16px", fontSize: "13px",
+  outline: "none", marginBottom: "16px",
+  fontFamily: "'Jost', sans-serif", boxSizing: "border-box"
+}}
           />
 
           {password && password !== ADMIN_PASSWORD && (
