@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { SiteShell } from "@/components/site/SiteShell";
 import { Reveal, Eyebrow } from "@/components/site/Reveal";
-import { ArrowRight } from "lucide-react";
 
 const supabase = createClient(
   "https://alxvakgaosrpnudmxerw.supabase.co",
@@ -101,15 +100,9 @@ function PortfolioPage() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
-              <div className="text-muted-foreground text-sm mb-4">
-                No images uploaded yet for this category.
+              <div className="text-muted-foreground text-sm">
+                Portfolio coming soon — check back shortly.
               </div>
-              <Link
-                to="/portal"
-                className="inline-flex items-center gap-2 text-primary text-sm hover:gap-3 transition-all"
-              >
-                Upload images in Admin Portal <ArrowRight className="w-4 h-4" />
-              </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
