@@ -99,23 +99,7 @@ export const PARTNERS = [
   "SOBHA", "ALDAR", "ROSHN", "RED SEA GLOBAL", "DIRIYAH",
 ];
 
-export const TESTIMONIALS = [
-  {
-    quote: "Kven delivered a turnkey HQ fit-out three weeks ahead of schedule. The execution discipline matched the design sensibility — rare combination.",
-    author: "Layla Hassan",
-    role: "COO, Northwind Capital",
-  },
-  {
-    quote: "From structural engineering to event production, every touchpoint felt considered. They are the only team we re-engage without RFP.",
-    author: "Marcus Reilly",
-    role: "Head of Real Estate, Helios Group",
-  },
-  {
-    quote: "The supply contract simplified our procurement across four sites. Single point of accountability, transparent pricing.",
-    author: "Aisha Mansour",
-    role: "Procurement Director, Solis Hospitality",
-  },
-];
+export const TESTIMONIALS: { quote: string; author: string; role: string }[] = [];
 
 export const SUPPLIES: never[] = [];
 
